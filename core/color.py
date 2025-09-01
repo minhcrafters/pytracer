@@ -5,7 +5,7 @@ from typing import Tuple, Union
 
 import numpy as np
 
-from .math.vector import Point3, Vector3
+from .math.vectors import Point3, Vector3
 
 Number = Union[float, int, np.number]
 

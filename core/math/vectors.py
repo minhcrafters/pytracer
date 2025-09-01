@@ -10,7 +10,6 @@ class Vector2:
     x: np.float32 = 0.0
     y: np.float32 = 0.0
 
-    # --- Factory helpers ---
     @classmethod
     def zero(cls) -> "Vector2":
         return cls(0.0, 0.0)
@@ -34,7 +33,6 @@ class Vector2:
             raise ValueError("Iterable must be length 2")
         return cls(a[0], a[1])
 
-    # --- Representation ---
     def __repr__(self) -> str:
         return f"Vector2(x={np.float32(self.x):.6f}, y={np.float32(self.y):.6f})"
 
@@ -44,7 +42,6 @@ class Vector2:
     def copy(self) -> "Vector2":
         return Vector3(self.x, self.y)
 
-    # --- Operators ---
     def _coerce_operand(self, other):
         if isinstance(other, Vector2):
             return other
@@ -71,7 +68,6 @@ class Vector2:
         return Vector2(-self.x, -self.y)
 
     def __mul__(self, other):
-        # scalar multiply or elementwise multiply (Hadamard) with another Vector2
         if isinstance(other, Number):
             s = np.float32(other)
             return Vector2(self.x * s, self.y * s)
@@ -146,7 +142,6 @@ class Vector2:
             return np.float32(self.y)
         raise IndexError("Index out of range for Vector2")
 
-    # --- Basic vector math ---
     def dot(self, other: "Vector2") -> np.float32:
         return np.float32(self.x * other.x + self.y * other.y)
 
@@ -184,13 +179,11 @@ class Vector2:
     def distance_to(self, other: "Vector2") -> np.float32:
         return (self - other).magnitude
 
-    # --- More advanced helpers ---
     def angle_to(self, other: "Vector2") -> float:
         """Return angle in radians between self and other."""
         denom = np.float32(self.magnitude * other.magnitude)
         if denom == 0:
             raise ValueError("Cannot compute angle with zero-length vector")
-        # clamp for numerical stability
         cos_theta = np.float32(self.dot(other)) / denom
         cos_theta = max(-1.0, min(1.0, cos_theta))
         return np.acos(cos_theta)
@@ -206,7 +199,6 @@ class Vector2:
     def reflect(self, normal: "Vector2") -> "Vector2":
         """Reflect this vector across a normal. Normal is expected to be normalized."""
         n = normal.normalized()
-        # r = v - 2*(v·n)*n
         two_dot = np.float32(2.0) * self.dot(n)
         return Vector2(self.x - two_dot * n.x, self.y - two_dot * n.y)
 
@@ -242,7 +234,6 @@ class Vector2:
         term3 = k * (k.dot(v) * (1.0 - cos_t))
         return Vector3(term1.x + term2.x + term3.x, term1.y + term2.y + term3.y)
 
-    # --- Interop ---
     def to_tuple(self) -> Tuple[float, float]:
         return (np.float32(self.x), np.float32(self.y))
 
@@ -253,7 +244,6 @@ class Vector3:
     y: np.float32 = 0.0
     z: np.float32 = 0.0
 
-    # --- Factory helpers ---
     @classmethod
     def zero(cls) -> "Vector3":
         return cls(0.0, 0.0, 0.0)
@@ -281,7 +271,6 @@ class Vector3:
             raise ValueError("Iterable must be length 3")
         return cls(a[0], a[1], a[2])
 
-    # --- Representation ---
     def __repr__(self) -> str:
         return f"Vector3(x={np.float32(self.x):.6f}, y={np.float32(self.y):.6f}, z={np.float32(self.z):.6f})"
 
@@ -291,7 +280,6 @@ class Vector3:
     def copy(self) -> "Vector3":
         return Vector3(self.x, self.y, self.z)
 
-    # --- Operators ---
     def _coerce_operand(self, other):
         if isinstance(other, Vector3):
             return other
@@ -318,7 +306,6 @@ class Vector3:
         return Vector3(-self.x, -self.y, -self.z)
 
     def __mul__(self, other):
-        # scalar multiply or elementwise multiply (Hadamard) with another Vector3
         if isinstance(other, (int, float, np.number)):
             s = np.float32(other)
             return Vector3(self.x * s, self.y * s, self.z * s)
@@ -402,7 +389,6 @@ class Vector3:
             return np.float32(self.z)
         raise IndexError("Index out of range for Vector3")
 
-    # --- Basic vector math ---
     def dot(self, other: "Vector3") -> np.float32:
         return np.float32(self.x * other.x + self.y * other.y + self.z * other.z)
 
@@ -442,13 +428,11 @@ class Vector3:
     def distance_to(self, other: "Vector3") -> np.float32:
         return (self - other).magnitude
 
-    # --- More advanced helpers ---
     def angle_to(self, other: "Vector3") -> float:
         """Return angle in radians between self and other."""
         denom = np.float32(self.magnitude * other.magnitude)
         if denom == 0:
             raise ValueError("Cannot compute angle with zero-length vector")
-        # clamp for numerical stability
         cos_theta = np.float32(self.dot(other)) / denom
         cos_theta = max(-1.0, min(1.0, cos_theta))
         return np.acos(cos_theta)
@@ -466,7 +450,6 @@ class Vector3:
     def reflect(self, normal: "Vector3") -> "Vector3":
         """Reflect this vector across a normal. Normal is expected to be normalized."""
         n = normal.normalized()
-        # r = v - 2*(v·n)*n
         two_dot = np.float32(2.0) * self.dot(n)
         return Vector3(self.x - two_dot * n.x, self.y - two_dot * n.y, self.z - two_dot * n.z)
 
@@ -509,7 +492,6 @@ class Vector3:
             term1.x + term2.x + term3.x, term1.y + term2.y + term3.y, term1.z + term2.z + term3.z
         )
 
-    # --- Interop ---
     def to_tuple(self) -> Tuple[float, float, float]:
         return (np.float32(self.x), np.float32(self.y), np.float32(self.z))
 
@@ -525,7 +507,6 @@ class Point3:
         self.y = np.float32(self.y)
         self.z = np.float32(self.z)
 
-    # Factory helpers
     @classmethod
     def origin(cls) -> "Point3":
         return cls(0.0, 0.0, 0.0)
@@ -541,7 +522,6 @@ class Point3:
     def from_vector(cls, v: "Vector3") -> "Point3":
         return cls(v.x, v.y, v.z)
 
-    # Conversions
     def to_vector(self) -> "Vector3":
         return Vector3(self.x, self.y, self.z)
 
@@ -554,7 +534,6 @@ class Point3:
     def copy(self) -> "Point3":
         return Point3(self.x, self.y, self.z)
 
-    # Operators
     def __repr__(self) -> str:
         return (
             f"Point3({np.float32(self.x):.6f}, {np.float32(self.y):.6f}, {np.float32(self.z):.6f})"
@@ -586,7 +565,6 @@ class Point3:
         Point - Vector -> Point (translate backwards)
         """
         if isinstance(other, Point3):
-            # result is a Vector3 (difference between positions)
             return Vector3(self.x - other.x, self.y - other.y, self.z - other.z)
         if isinstance(other, Vector3) or isinstance(other, (int, float, np.number)):
             v = self._coerce_vector(other)
@@ -598,7 +576,6 @@ class Point3:
             return False
         return bool((self.x == other.x) and (self.y == other.y) and (self.z == other.z))
 
-    # Utilities
     def distance_to(self, other: "Point3") -> np.float32:
         return np.float32(
             ((self.x - other.x) ** 2 + (self.y - other.y) ** 2 + (self.z - other.z) ** 2) ** 0.5
@@ -628,3 +605,98 @@ class Point3:
             and abs(np.float32(self.y - other.y)) <= eps
             and abs(np.float32(self.z - other.z)) <= eps
         )
+
+
+@dataclass
+class Point2:
+    x: np.float32 = np.float32(0.0)
+    y: np.float32 = np.float32(0.0)
+
+    def __post_init__(self):
+        self.x = np.float32(self.x)
+        self.y = np.float32(self.y)
+
+    @classmethod
+    def origin(cls) -> "Point2":
+        return cls(0.0, 0.0)
+
+    @classmethod
+    def from_iterable(cls, it: Iterable[Number]) -> "Point2":
+        a = list(it)
+        if len(a) != 2:
+            raise ValueError("Iterable must have length 2")
+        return cls(a[0], a[1])
+
+    @classmethod
+    def from_vector(cls, v: "Vector2") -> "Point2":
+        return cls(v.x, v.y)
+
+    def to_vector(self) -> "Vector2":
+        return Vector2(self.x, self.y)
+
+    def to_tuple(self) -> Tuple[float, float]:
+        return (np.float32(self.x), np.float32(self.y))
+
+    def to_array(self, dtype=np.float32) -> np.ndarray:
+        return np.array([self.x, self.y], dtype=dtype)
+
+    def copy(self) -> "Point2":
+        return Point2(self.x, self.y)
+
+    def __repr__(self) -> str:
+        return f"Point2({np.float32(self.x):.6f}, {np.float32(self.y):.6f})"
+
+    def _coerce_vector(self, other: "Vector2") -> "Vector2":
+        if isinstance(other, Vector2):
+            return other
+        if isinstance(other, (int, float, np.number)):
+            return Vector2(np.float32(other), np.float32(other))
+        raise TypeError(f"Unsupported operand for Point2 and {type(other)}")
+
+    def __add__(self, other: "Vector2"):
+        """
+        Point + Vector -> Point
+        Numeric scalar interpreted as uniform translation.
+        """
+        if isinstance(other, Vector2) or isinstance(other, (int, float, np.number)):
+            v = self._coerce_vector(other)
+            return Point2(self.x + v.x, self.y + v.y)
+        raise TypeError("Can only add a Vector2 (or scalar) to a Point2")
+
+    def __radd__(self, other: "Vector2"):
+        return self.__add__(other)
+
+    def __sub__(self, other: "Vector2"):
+        """
+        Point - Point -> Vector2
+        Point - Vector -> Point (translate backwards)
+        """
+        if isinstance(other, Point2):
+            return Vector2(self.x - other.x, self.y - other.y)
+        if isinstance(other, Vector2) or isinstance(other, (int, float, np.number)):
+            v = self._coerce_vector(other)
+            return Point2(self.x - v.x, self.y - v.y)
+        raise TypeError("Can subtract a Point2 or Vector2 from a Point2")
+
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, Point2):
+            return False
+        return bool((self.x == other.x) and (self.y == other.y))
+
+    def distance_to(self, other: "Point2") -> np.float32:
+        return np.float32(((self.x - other.x) ** 2 + (self.y - other.y) ** 2) ** 0.5)
+
+    def distance_squared_to(self, other: "Point2") -> np.float32:
+        return np.float32((self.x - other.x) ** 2 + (self.y - other.y) ** 2)
+
+    def translate(self, v: "Vector2") -> "Point2":
+        """Return a new Point translated by vector v."""
+        return Point2(self.x + v.x, self.y + v.y)
+
+    def lerp_to(self, other: "Point2", t: float) -> "Point2":
+        """Linear interpolate between this point and other by t in [0,1]."""
+        t32 = np.float32(t)
+        return Point2(self.x + (other.x - self.x) * t32, self.y + (other.y - self.y) * t32)
+
+    def almost_equal(self, other: "Point2", eps: float = 1e-6) -> bool:
+        return abs(np.float32(self.x - other.x)) <= eps and abs(np.float32(self.y - other.y)) <= eps

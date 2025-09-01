@@ -1,4 +1,4 @@
-from core.math.vector import Point3, Vector2
+from core.math.vectors import Point3, Vector2
 
 
 def world_to_screen(world: Point3, size: Vector2, scale: float = 1.0) -> Vector2:

@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from core.canvas import Canvas
-from core.math.vector import Point3, Vector2, Vector3
+from core.math.vectors import Point3, Vector2, Vector3
 
 
 @dataclass
@@ -24,7 +24,7 @@ def tick(env: Environment, proj: Projectile):
 
 
 def main():
-    p = Projectile(Vector3(0, 1, 0), Vector3(1, 1.8, 0).normalize() * 10.25)
+    p = Projectile(Vector3(0, 1, 0), Vector3(1, 1.5, 0).normalize() * 12.25)
     e = Environment(Vector3(0, -0.1, 0), Vector3(-0.01, 0, 0))
 
     size = Vector2(900, 550)
