@@ -8,10 +8,10 @@ from core.color import Color
 @dataclass
 class Material:
     color: Color
-    ambient: np.float32 = 0.0
+    ambient: np.float32 = 0.1
     diffuse: np.float32 = 1.0
-    specular: np.float32 = 0.0
-    shininess: np.float32 = 10.0
+    specular: np.float32 = 1.0
+    shininess: np.float32 = 200.0
 
     @classmethod
     def default(cls):

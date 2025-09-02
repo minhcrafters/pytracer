@@ -4,6 +4,7 @@ import numpy as np
 
 from core.math.matrices import Matrix4
 from core.math.vectors import Point3, Vector3
+from core.rays.intersection import Intersection
 from core.shapes.shape import Shape
 
 
@@ -13,13 +14,12 @@ class Ray:
     dir: Vector3
     t: np.float32
 
-    @property
-    def position(self) -> Point3:
-        pos = self.origin + self.dir * self.t
-        return Point3(*pos)
+    def get_position(self, t: np.float32) -> Point3:
+        pos = self.origin + self.dir * t
+        return pos
 
     @staticmethod
-    def hit(ray: "Ray", obj: Shape):
+    def hit(ray: "Ray", obj: Shape) -> list[Intersection]:
         inters = obj.intersect(ray).intersections
         inters.sort(key=lambda x: x.t)
 

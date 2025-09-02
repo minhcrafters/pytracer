@@ -290,7 +290,7 @@ class Vector3:
         return Vector3(self.x, self.y, self.z)
 
     def _coerce_operand(self, other):
-        if isinstance(other, Vector3):
+        if isinstance(other, (Vector3, Point3)):
             return other
         if isinstance(other, (int, float, np.number)):
             return Vector3(np.float32(other), np.float32(other), np.float32(other))

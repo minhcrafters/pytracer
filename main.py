@@ -1,9 +1,12 @@
 from dataclasses import dataclass
 
 import numpy as np
+from tqdm import tqdm
 
 from core.canvas import Canvas
 from core.color import Color
+from core.lights.light import Light
+from core.lights.point_light import PointLight
 from core.math.matrices import Matrix2, Matrix4
 from core.math.vectors import Point3, Vector2, Vector3
 from core.rays.ray import Ray
@@ -167,6 +170,50 @@ def test_normal():
     print(norm)
 
 
+def test_draw_sphere_shaded():
+    size = Vector2(100, 100)
+    c = Canvas(*size.to_array().tolist())
+
+    sphere = Sphere(0, center=Point3(0, 0, 0), radius=1.0)
+    # sphere.transform = Matrix4.shear(0.5, 0, 0, 0, 0, 0) @ Matrix4.scaling(0.5, 1, 1)
+    sphere.material.color = Color(1, 0.2, 1)
+
+    light_pos = Point3(-10, 10, -10)
+    light_color = Color(1, 1, 1)
+    light = PointLight(light_pos, light_color)
+
+    ray_origin = Point3(0, 0, -5)
+    wall_z = 10.0
+    wall_size = 7.0
+
+    px_size = wall_size / size.x
+    half = wall_size / 2
+
+    for y in tqdm(range(size.y)):
+        world_y = half - px_size * y
+        for x in tqdm(range(size.x)):
+            world_x = -half + px_size * x
+
+            pos = Point3(world_x, world_y, wall_z)
+
+            ray = Ray(ray_origin, (pos - ray_origin).normalize(), wall_z * 10)
+            hit = Ray.hit(ray, sphere)
+
+            if hit:
+                point = ray.get_position(hit[0].t)
+                normal = sphere.normal_at(point)
+                eye = -ray.dir
+
+                color = Light.lighting(sphere.material, light, point, eye, normal)
+
+                c.set_pixel(x, y, color)
+
+    ppm = c.to_ppm()
+
+    with open("output.ppm", "w") as f:
+        f.write(ppm.getvalue())
+
+
 if __name__ == "__main__":
     # main()
     # test_matrices()
@@ -176,4 +223,5 @@ if __name__ == "__main__":
     # test_ray_transform()
     # test_ray_sphere_transform()
     # test_draw_sphere()
-    test_normal()
+    # test_normal()
+    test_draw_sphere_shaded()

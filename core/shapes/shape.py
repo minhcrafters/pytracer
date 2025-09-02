@@ -22,6 +22,3 @@ class Shape:
 
     def normal_at(self, point: Point3):
         return NotImplemented
-
-    def reflect_at(self, in_vec: Vector3, normal: Vector3):
-        return in_vec - normal * 2 * in_vec.dot(normal)

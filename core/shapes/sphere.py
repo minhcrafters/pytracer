@@ -19,6 +19,8 @@ class Sphere(Shape):
         center: Point3,
         radius: int,
     ):
+        super().__init__(id)
+        
         self.id = id
         self.center = center
         self.radius = radius
