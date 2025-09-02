@@ -453,17 +453,17 @@ class Matrix4:
 
         return mat
 
-    def translate(self, vec: Vector3):
-        return self.data @ Matrix4.translation(*vec)
+    def translate(self, vec: Vector3) -> "Matrix4":
+        return Matrix4(self.data) @ Matrix4.translation(vec.x, vec.y, vec.z)
 
-    def scale(self, vec: Vector3):
-        return self.data @ Matrix4.scaling(*vec)
+    def scale(self, vec: Vector3) -> "Matrix4":
+        return Matrix4(self.data) @ Matrix4.scaling(vec.x, vec.y, vec.z)
 
-    def rotate_along_x(self, theta: np.float32):
-        return Matrix4(self.data @ Matrix4.rotation_x(theta))
+    def rotate_along_x(self, theta: np.float32) -> "Matrix4":
+        return Matrix4(self.data) @ Matrix4.rotation_x(theta)
 
-    def rotate_along_y(self, theta: np.float32):
-        return Matrix4(self.data @ Matrix4.rotation_y(theta))
+    def rotate_along_y(self, theta: np.float32) -> "Matrix4":
+        return Matrix4(self.data) @ Matrix4.rotation_y(theta)
 
-    def rotate_along_z(self, theta: np.float32):
-        return Matrix4(self.data @ Matrix4.rotation_z(theta))
+    def rotate_along_z(self, theta: np.float32) -> "Matrix4":
+        return Matrix4(self.data) @ Matrix4.rotation_z(theta)

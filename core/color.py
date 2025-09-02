@@ -124,6 +124,16 @@ class Color(Point3):
         r, g, b, a = self.to_tuple()
         return f"Color(r={r:.3f}, g={g:.3f}, b={b:.3f}, a={a:.3f})"
 
+    def __eq__(self, other):
+        if not isinstance(other, Color):
+            return False
+        return bool(
+            np.isclose(self.x, other.x)
+            and np.isclose(self.y, other.y)
+            and np.isclose(self.z, other.z)
+            and np.isclose(self.a, other.a)
+        )
+
     # --- Color operations (work in normalized float space) ---
     def with_alpha(self, alpha: Number) -> "Color":
         return Color(self.r, self.g, self.b, np.float32(max(0.0, min(1.0, float(alpha)))))

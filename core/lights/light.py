@@ -11,6 +11,10 @@ class Light:
     position: Point3
     intensity: Color
 
+    @classmethod
+    def default(cls):
+        return cls(Point3(0, 0, 0), Color(1, 1, 1))
+
     @staticmethod
     def lighting(material: Material, light: "Light", point: Point3, eye: Vector3, normal: Vector3):
         ambient = Color(0, 0, 0)

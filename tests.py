@@ -226,3 +226,47 @@ def test_camera():
     assert cam.vsize == 120
     assert cam.fov == np.pi / 2
     assert cam.transform == Matrix4.identity()
+
+
+def test_camera_pixel_size():
+    # horizontal
+    cam = Camera(hsize=200, vsize=125, fov=np.pi / 2)
+
+    assert np.isclose(cam.pixel_size, 0.01)
+
+    # vertical
+    cam = Camera(hsize=125, vsize=200, fov=np.pi / 2)
+
+    assert np.isclose(cam.pixel_size, 0.01)
+
+
+def test_camera_ray_for_pixel():
+    cam = Camera(hsize=201, vsize=101, fov=np.pi / 2)
+
+    ray = cam.ray_from_pixel(100, 50)
+    assert ray.origin == Point3(0, 0, 0)
+    assert ray.dir == Vector3(0, 0, -1)
+
+    ray = cam.ray_from_pixel(0, 0)
+    assert ray.origin == Point3(0, 0, 0)
+    assert ray.dir == Vector3(0.66519, 0.33259, -0.66851)
+
+    cam.transform = Matrix4.rotation_y(np.pi / 4) @ Matrix4.translation(0, -2, 5)
+    ray = cam.ray_from_pixel(100, 50)
+    assert ray.origin == Point3(0, 2, -5)
+    assert ray.dir == Vector3(np.sqrt(2) / 2, 0, -np.sqrt(2) / 2)
+
+
+def test_camera_render():
+    scene = Scene.test_scene()
+    cam = Camera(hsize=11, vsize=11, fov=np.pi / 2)
+
+    p_from = Point3(0, 0, -5)
+    p_to = Point3(0, 0, 0)
+    v_up = Vector3(0, 1, 0)
+
+    cam.transform = Matrix4.view_transform(p_from, p_to, v_up)
+
+    canvas = scene.render(cam)
+
+    assert np.allclose(canvas.get_pixel(5, 5), Color(0.3806612, 0.47582647, 0.2854959).to_array())

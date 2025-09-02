@@ -129,7 +129,7 @@ class Vector2:
     def __eq__(self, other) -> bool:
         if not isinstance(other, Vector2):
             return False
-        return bool((self.x == other.x) and (self.y == other.y))
+        return bool(np.isclose(self.x, other.x) and np.isclose(self.y, other.y))
 
     def __iter__(self):
         yield np.float32(self.x)
@@ -382,7 +382,11 @@ class Vector3:
     def __eq__(self, other) -> bool:
         if not isinstance(other, Vector3):
             return False
-        return bool((self.x == other.x) and (self.y == other.y) and (self.z == other.z))
+        return bool(
+            np.isclose(self.x, other.x)
+            and np.isclose(self.y, other.y)
+            and np.isclose(self.z, other.z)
+        )
 
     def __iter__(self):
         yield np.float32(self.x)
@@ -612,7 +616,11 @@ class Point3:
     def __eq__(self, other) -> bool:
         if not isinstance(other, Point3):
             return False
-        return bool((self.x == other.x) and (self.y == other.y) and (self.z == other.z))
+        return bool(
+            np.isclose(self.x, other.x)
+            and np.isclose(self.y, other.y)
+            and np.isclose(self.z, other.z)
+        )
 
     def distance_to(self, other: "Point3") -> np.float32:
         return np.float32(
@@ -719,7 +727,7 @@ class Point2:
     def __eq__(self, other) -> bool:
         if not isinstance(other, Point2):
             return False
-        return bool((self.x == other.x) and (self.y == other.y))
+        return bool(np.isclose(self.x, other.x) and np.isclose(self.y, other.y))
 
     def distance_to(self, other: "Point2") -> np.float32:
         return np.float32(((self.x - other.x) ** 2 + (self.y - other.y) ** 2) ** 0.5)
