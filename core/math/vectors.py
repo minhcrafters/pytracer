@@ -28,7 +28,7 @@ class Vector2:
 
     @classmethod
     def from_iterable(cls, it: Iterable[Number]) -> "Vector2":
-        a = list(it)
+        a = np.array(it)
         if len(a) != 2:
             raise ValueError("Iterable must be length 2")
         return cls(a[0], a[1])
@@ -266,9 +266,18 @@ class Vector3:
 
     @classmethod
     def from_iterable(cls, it: Iterable[Number]) -> "Vector3":
-        a = list(it)
+        a = np.array(it)
         if len(a) != 3:
             raise ValueError("Iterable must be length 3")
+        return cls(a[0], a[1], a[2])
+
+    @classmethod
+    def from_xyzw(cls, it: Iterable[Number]) -> "Vector3":
+        a = np.array(it)
+        if len(a) != 4:
+            raise ValueError("Iterable must have length 4")
+        if a[3] != 0.0:
+            raise ValueError("Not a vector")
         return cls(a[0], a[1], a[2])
 
     def __repr__(self) -> str:
@@ -475,7 +484,7 @@ class Vector3:
             and abs(np.float32(self.z - other.z)) <= eps
         )
 
-    def rotate_around_axis(self, axis: "Vector3", angle_radians: float) -> "Vector3":
+    def rotate_around_axis(self, axis: "Vector3", angle_radians: np.float32) -> "Vector3":
         """
         Rotate this vector around given axis by angle (radians).
         Uses Rodrigues' rotation formula. Axis does not need to be normalized.
@@ -495,6 +504,11 @@ class Vector3:
     def to_tuple(self) -> Tuple[float, float, float]:
         return (np.float32(self.x), np.float32(self.y), np.float32(self.z))
 
+    def to_xyzw(self) -> np.ndarray:
+        return np.array(
+            [np.float32(self.x), np.float32(self.y), np.float32(self.z), 0.0], dtype=np.float32
+        )
+
 
 @dataclass
 class Point3:
@@ -513,9 +527,18 @@ class Point3:
 
     @classmethod
     def from_iterable(cls, it: Iterable[Number]) -> "Point3":
-        a = list(it)
+        a = np.array(it)
         if len(a) != 3:
             raise ValueError("Iterable must have length 3")
+        return cls(a[0], a[1], a[2])
+
+    @classmethod
+    def from_xyzw(cls, it: Iterable[Number]) -> "Point3":
+        a = np.array(it)
+        if len(a) != 4:
+            raise ValueError("Iterable must have length 4")
+        if a[3] != 1.0:
+            raise ValueError("Not a point")
         return cls(a[0], a[1], a[2])
 
     @classmethod
@@ -530,6 +553,9 @@ class Point3:
 
     def to_array(self, dtype=np.float32) -> np.ndarray:
         return np.array([self.x, self.y, self.z], dtype=dtype)
+
+    def to_xyzw(self) -> np.ndarray:
+        return np.array([self.x, self.y, self.z, 1.0], dtype=np.float32)
 
     def copy(self) -> "Point3":
         return Point3(self.x, self.y, self.z)
@@ -569,6 +595,18 @@ class Point3:
         if isinstance(other, Vector3) or isinstance(other, (int, float, np.number)):
             v = self._coerce_vector(other)
             return Point3(self.x - v.x, self.y - v.y, self.z - v.z)
+        raise TypeError("Can subtract a Point3 or Vector3 from a Point3")
+
+    def __mul__(self, other):
+        """
+        Point * Point -> Point
+        Point * Vector -> Point
+        """
+        if isinstance(other, Point3):
+            return Vector3(self.x * other.x, self.y * other.y, self.z * other.z)
+        if isinstance(other, Vector3) or isinstance(other, (int, float, np.number)):
+            v = self._coerce_vector(other)
+            return Point3(self.x * v.x, self.y * v.y, self.z * v.z)
         raise TypeError("Can subtract a Point3 or Vector3 from a Point3")
 
     def __eq__(self, other) -> bool:
@@ -622,7 +660,7 @@ class Point2:
 
     @classmethod
     def from_iterable(cls, it: Iterable[Number]) -> "Point2":
-        a = list(it)
+        a = np.array(it)
         if len(a) != 2:
             raise ValueError("Iterable must have length 2")
         return cls(a[0], a[1])

@@ -1,0 +1,35 @@
+from dataclasses import dataclass
+
+import numpy as np
+
+from core.math.matrices import Matrix4
+from core.math.vectors import Point3, Vector3
+from core.shapes.shape import Shape
+
+
+@dataclass
+class Ray:
+    origin: Point3
+    dir: Vector3
+    t: np.float32
+
+    @property
+    def position(self) -> Point3:
+        pos = self.origin + self.dir * self.t
+        return Point3(*pos)
+
+    @staticmethod
+    def hit(ray: "Ray", obj: Shape):
+        inters = obj.intersect(ray).intersections
+        inters.sort(key=lambda x: x.t)
+
+        inters = list(filter(lambda x: x.t > 0, inters))
+
+        return inters if inters else None
+
+    @staticmethod
+    def transform(ray: "Ray", mat: Matrix4) -> "Ray":
+        origin = ray.origin.to_xyzw() @ mat[:].T
+        dir = ray.dir.to_xyzw() @ mat[:].T
+
+        return Ray(Point3.from_xyzw(origin), Vector3.from_xyzw(dir), ray.t)

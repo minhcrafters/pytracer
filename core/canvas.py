@@ -94,7 +94,7 @@ class Canvas:
         """Set pixel at integer coordinates (x, y). Origin (0,0) is top-left. Uses clamping."""
         if self._check_coords(x, y):
             arr = self._normalize_colorlike(color)
-            self.pixels[y, x, :] = arr
+            self.pixels[np.uint16(np.round(y)), np.uint16(np.round(x)), :] = arr
 
     def get_pixel(self, x: int, y: int, as_color: bool = False):
         """Get pixel at (x, y). If as_color=True and a Color class exists, returns Color; otherwise numpy array."""
