@@ -5,7 +5,7 @@ import numpy as np
 from core.math.matrices import Matrix4
 from core.math.vectors import Point3, Vector3
 from core.rays.intersection import Intersection
-from core.shapes.shape import Shape
+from core.objects.shapes.shape import Shape
 
 
 @dataclass

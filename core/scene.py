@@ -9,8 +9,8 @@ from core.rays.computation import Computation
 from core.rays.intersection import Intersection
 from core.rays.intersections import Intersections
 from core.rays.ray import Ray
-from core.shapes.shape import Shape
-from core.shapes.sphere import Sphere
+from core.objects.shapes.shape import Shape
+from core.objects.shapes.sphere import Sphere
 
 
 @dataclass

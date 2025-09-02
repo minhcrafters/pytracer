@@ -7,7 +7,7 @@ from core.rays.computation import Computation
 
 if TYPE_CHECKING:
     from core.rays.ray import Ray
-    from core.shapes.shape import Shape
+    from core.objects.shapes.shape import Shape
 
 
 @dataclass

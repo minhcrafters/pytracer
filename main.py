@@ -10,7 +10,7 @@ from core.lights.point_light import PointLight
 from core.math.matrices import Matrix2, Matrix4
 from core.math.vectors import Point3, Vector2, Vector3
 from core.rays.ray import Ray
-from core.shapes.sphere import Sphere
+from core.objects.sphere import Sphere
 
 
 @dataclass

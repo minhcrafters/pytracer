@@ -1,12 +1,14 @@
 import numpy as np
+
 from core.color import Color
 from core.lights.point_light import PointLight
 from core.math.matrices import Matrix2, Matrix4
 from core.math.vectors import Point3, Vector3
+from core.objects.camera import Camera
+from core.objects.shapes.sphere import Sphere
 from core.rays.intersection import Intersection
 from core.rays.ray import Ray
 from core.scene import Scene
-from core.shapes.sphere import Sphere
 
 
 def test_matrices():
@@ -186,5 +188,41 @@ def test_color_at_intersection():
 
     assert np.allclose(color.to_array(), inner.material.color.to_array())
 
+
 def test_transformation_matrix():
     p_from = Point3(0, 0, 0)
+    p_to = Point3(0, 0, -1)
+    v_up = Vector3(0, 1, 0)
+
+    m_transform = Matrix4.view_transform(p_from, p_to, v_up)
+
+    assert m_transform == Matrix4.identity()
+
+
+def test_transformation_matrix_scaling():
+    p_from = Point3(0, 0, 0)
+    p_to = Point3(0, 0, 1)
+    v_up = Vector3(0, 1, 0)
+
+    m_transform = Matrix4.view_transform(p_from, p_to, v_up)
+
+    assert m_transform == Matrix4.scaling(-1, 1, -1)
+
+
+def test_transformation_matrix_translation():
+    p_from = Point3(0, 0, 8)
+    p_to = Point3(0, 0, 0)
+    v_up = Vector3(0, 1, 0)
+
+    m_transform = Matrix4.view_transform(p_from, p_to, v_up)
+
+    assert m_transform == Matrix4.translation(0, 0, -8)
+
+
+def test_camera():
+    cam = Camera(hsize=160, vsize=120, fov=np.pi / 2)
+
+    assert cam.hsize == 160
+    assert cam.vsize == 120
+    assert cam.fov == np.pi / 2
+    assert cam.transform == Matrix4.identity()

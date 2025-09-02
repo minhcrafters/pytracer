@@ -2,10 +2,10 @@ import numpy as np
 
 from core.rays.ray import Ray
 
-from ..math.vectors import Point3, Vector3
-from ..rays.intersection import Intersection
-from ..rays.intersections import Intersections
-from .shape import Shape
+from core.math.vectors import Point3, Vector3
+from core.rays.intersection import Intersection
+from core.rays.intersections import Intersections
+from core.objects.shapes.shape import Shape
 
 
 class Sphere(Shape):
