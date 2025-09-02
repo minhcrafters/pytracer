@@ -20,7 +20,7 @@ def test_matrices():
 
 
 def test_ray_sphere_intersect():
-    sphere = Sphere(0, Point3(0, 0, 0), 1.0)
+    sphere = Sphere()
     ray = Ray(Point3(0, 0, 5), Vector3(0, 0, 1), 10)
 
     intersect = sphere.intersect(ray)
@@ -29,7 +29,7 @@ def test_ray_sphere_intersect():
 
 
 def test_ray_sphere_hit():
-    sphere = Sphere(0, Point3(0, 0, 0), 1.0)
+    sphere = Sphere()
     ray = Ray(Point3(0, 0, -5), Vector3(0, 0, 1), 10)
 
     hit = Ray.hit(ray, sphere)
@@ -53,7 +53,7 @@ def test_ray_transform():
 
 
 def test_ray_sphere_transform():
-    sphere = Sphere(0, center=Point3(0, 0, 0), radius=1.0)
+    sphere = Sphere()
     ray = Ray(Point3(0, 0, -5), Vector3(0, 0, 1), 10)
 
     sphere.transform = Matrix4.scaling(2, 2, 2)
@@ -92,7 +92,7 @@ def test_scene():
 
 def test_prepare_computations():
     ray = Ray(Point3(0, 0, -5), Vector3(0, 0, 1))
-    sphere = Sphere(0)
+    sphere = Sphere()
 
     intersection = Intersection(4, sphere)
 
@@ -107,7 +107,7 @@ def test_prepare_computations():
 
 def test_inside_or_not():
     ray = Ray(Point3(0, 0, -5), Vector3(0, 0, 1))
-    sphere = Sphere(0)
+    sphere = Sphere()
 
     intersection = Intersection(4, sphere)
 
@@ -118,7 +118,7 @@ def test_inside_or_not():
 
 def test_inside_or_not_2():
     ray = Ray(Point3(0, 0, 0), Vector3(0, 0, 1))
-    sphere = Sphere(0)
+    sphere = Sphere()
 
     intersection = Intersection(1, sphere)
 

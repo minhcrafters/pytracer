@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import time
 
 import numpy as np
 from core.canvas import Canvas
@@ -26,11 +27,11 @@ class Scene:
     def test_scene(cls):
         light = PointLight(Point3(-10, 10, -10), Color(1, 1, 1))
 
-        s1 = Sphere(1)
+        s1 = Sphere()
 
         s1.material = Material(color=Color(0.8, 1.0, 0.6), diffuse=0.7, specular=0.2)
 
-        s2 = Sphere(2)
+        s2 = Sphere()
 
         s2.transform = Matrix4.scaling(0.5, 0.5, 0.5)
 
@@ -82,13 +83,21 @@ class Scene:
         total_pixels = camera.hsize * camera.vsize
         pixel_count = 0
 
+        start_time = time.time()
+
         for y, x in np.ndindex(camera.vsize, camera.hsize):
             ray = camera.ray_from_pixel(x, y)
             color = self.color_at(ray)
             canvas.set_pixel(x, y, color)
+
             pixel_count += 1
             percentage = (pixel_count / total_pixels) * 100
             print(f"Rendering: {percentage:.2f}%", end="\r")
 
         print()
+
+        time_elapsed = time.time() - start_time
+
+        print(f"Took {time_elapsed:.2f} seconds")
+
         return canvas

@@ -11,16 +11,14 @@ if TYPE_CHECKING:
 class Shape:
     def __init__(
         self,
-        id: int,
         transform: Matrix4 = Matrix4.identity(),
         material: Material = Material.default(),
     ):
-        self.id = id
         self.transform = transform
         self.material = material
 
     def __repr__(self):
-        return f"Shape(id={self.id}, transform={self.transform})"
+        return f"Shape(transform={self.transform})"
 
     def intersect(self, ray) -> "Intersections":
         return NotImplemented

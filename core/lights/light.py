@@ -39,8 +39,4 @@ class Light:
                 factor = reflect_dot_eye**material.shininess
                 specular = light.intensity * material.specular * factor
 
-        return Color(
-            ambient.x + diffuse.x + specular.x,
-            ambient.y + diffuse.y + specular.y,
-            ambient.z + diffuse.z + specular.z,
-        )
+        return ambient + diffuse + specular

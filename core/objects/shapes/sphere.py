@@ -11,13 +11,10 @@ from core.objects.shapes.shape import Shape
 class Sphere(Shape):
     def __init__(
         self,
-        id: int,
         center: Point3 = Point3(0, 0, 0),
         radius: np.float32 = 1.0,
     ):
-        super().__init__(id)
-
-        self.id = id
+        super().__init__()
         self.center = center
         self.radius = radius
 

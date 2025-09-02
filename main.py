@@ -149,14 +149,15 @@ def draw_sphere_shaded():
 
 def draw_example_scene():
     scene = Scene()
+    scene.light = PointLight(Point3(-10, 10, -10), Color(1, 1, 1))
 
-    floor = Sphere(0)
+    floor = Sphere()
     floor.transform = Matrix4.scaling(10, 0.01, 10)
     floor.material.color = Color(1, 0.9, 0.9)
     floor.material.specular = 0.0
     scene.add_object(floor)
 
-    left_wall = Sphere(1)
+    left_wall = Sphere()
     # left_wall.transform = Matrix4.translation(0, 0, 5) @ Matrix4.rotation_y(-np.pi / 4) @ Matrix4.rotation_x(np.pi / 2) @ Matrix4.scaling(10, 0.01, 10)
     left_wall.transform = (
         Matrix4.identity()
@@ -167,7 +168,7 @@ def draw_example_scene():
     )
     scene.add_object(left_wall)
 
-    right_wall = Sphere(2)
+    right_wall = Sphere()
     right_wall.transform = (
         Matrix4.identity()
         .translate(Vector3(0, 0, 5))
@@ -177,14 +178,14 @@ def draw_example_scene():
     )
     scene.add_object(right_wall)
 
-    middle = Sphere(3)
+    middle = Sphere()
     middle.transform = Matrix4.translation(-0.5, 1, 0.5)
     middle.material.color = Color(0.1, 1, 0.5)
     middle.material.diffuse = 0.7
     middle.material.specular = 0.3
     scene.add_object(middle)
 
-    right = Sphere(4)
+    right = Sphere()
     right.transform = (
         Matrix4.identity().translate(Vector3(1.5, 0.5, -0.5)).scale(Vector3(0.5, 0.5, 0.5))
     )
@@ -193,7 +194,7 @@ def draw_example_scene():
     right.material.specular = 0.3
     scene.add_object(right)
 
-    left = Sphere(5)
+    left = Sphere()
     left.transform = (
         Matrix4.identity().translate(Vector3(-1.5, 0.33, -0.75)).scale(Vector3(0.33, 0.33, 0.33))
     )
@@ -201,8 +202,6 @@ def draw_example_scene():
     left.material.diffuse = 0.7
     left.material.specular = 0.3
     scene.add_object(left)
-
-    scene.light = PointLight(Point3(-10, 10, -10), Color(1, 1, 1))
 
     cam = Camera(100, 50, np.pi / 3)
     cam.transform = Matrix4.view_transform(Point3(0, 1.5, -5), Point3(0, 1, 0), Vector3(0, 1, 0))
