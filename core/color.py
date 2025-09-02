@@ -8,6 +8,10 @@ import numpy as np
 from .math.vectors import Point3, Vector3
 
 Number = Union[float, int, np.number]
+ColorLike = Union[
+    "Color", Tuple[Number, Number, Number], Tuple[Number, Number, Number, Number], np.ndarray
+]
+
 
 HEX_RE = re.compile(r"^#?([0-9a-fA-F]{3,8})$")
 

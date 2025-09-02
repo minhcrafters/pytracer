@@ -1,9 +1,5 @@
-from dataclasses import dataclass, field
-
 import numpy as np
 
-from core.materials.material import Material
-from core.math.matrices import Matrix4
 from core.rays.ray import Ray
 
 from ..math.vectors import Point3, Vector3
@@ -16,11 +12,11 @@ class Sphere(Shape):
     def __init__(
         self,
         id: int,
-        center: Point3,
-        radius: int,
+        center: Point3 = Point3(0, 0, 0),
+        radius: np.float32 = 1.0,
     ):
         super().__init__(id)
-        
+
         self.id = id
         self.center = center
         self.radius = radius

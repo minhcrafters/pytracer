@@ -9,8 +9,8 @@ from core.color import Color
 class Material:
     color: Color
     ambient: np.float32 = 0.1
-    diffuse: np.float32 = 1.0
-    specular: np.float32 = 1.0
+    diffuse: np.float32 = 0.9
+    specular: np.float32 = 0.9
     shininess: np.float32 = 200.0
 
     @classmethod

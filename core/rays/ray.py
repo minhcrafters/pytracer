@@ -12,7 +12,7 @@ from core.shapes.shape import Shape
 class Ray:
     origin: Point3
     dir: Vector3
-    t: np.float32
+    t: np.float32 = np.inf
 
     def get_position(self, t: np.float32) -> Point3:
         pos = self.origin + self.dir * t
@@ -21,9 +21,10 @@ class Ray:
     @staticmethod
     def hit(ray: "Ray", obj: Shape) -> list[Intersection]:
         inters = obj.intersect(ray).intersections
-        inters.sort(key=lambda x: x.t)
 
         inters = list(filter(lambda x: x.t > 0, inters))
+
+        inters.sort(key=lambda x: x.t)
 
         return inters if inters else None
 

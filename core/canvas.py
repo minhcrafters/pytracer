@@ -5,12 +5,7 @@ from PIL import Image
 
 import numpy as np
 
-from .color import Color
-
-Number = Union[int, float, np.number]
-ColorLike = Union[
-    "Color", Tuple[Number, Number, Number], Tuple[Number, Number, Number, Number], np.ndarray
-]
+from .color import Color, ColorLike
 
 
 @dataclass

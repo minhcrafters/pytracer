@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from core.math.vectors import Vector3
+from core.math.vectors import Point3, Vector3
 
 
 class MatrixError(Exception):
@@ -346,6 +346,26 @@ class Matrix4:
         m[2, 1] = zy
 
         return m
+
+    @staticmethod
+    def view_transform(p_from: Point3, p_to: Point3, v_up: Vector3) -> "Matrix4":
+        v_forward = (p_to - p_from).normalize()
+        v_up_n = v_up.normalized()
+        v_left = v_forward.cross(v_up_n)
+        v_true_up = v_left.cross(v_forward)
+
+        m_orientation = Matrix4(
+            np.array(
+                [
+                    [v_left.x, v_left.y, v_left.z, 0.0],
+                    [v_true_up.x, v_true_up.y, v_true_up.z, 0.0],
+                    [-v_forward.x, -v_forward.y, -v_forward.z, 0.0],
+                    [0.0, 0.0, 0.0, 1.0],
+                ]
+            )
+        )
+
+        return m_orientation @ Matrix4.translation(-p_from.x, -p_from.y, -p_from.z)
 
     def __add__(self, other):
         return Matrix4(self.data + other.data)

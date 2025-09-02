@@ -3,15 +3,30 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
+from core.rays.computation import Computation
+
 if TYPE_CHECKING:
+    from core.rays.ray import Ray
     from core.shapes.shape import Shape
 
 
 @dataclass
 class Intersection:
     t: np.float32
-    object: 'Shape'
+    object: "Shape"
 
-    @staticmethod
-    def intersect(s: 'Shape', t: np.float32):
-        return Intersection(t, s)
+    def prepare_computations(self, ray: "Ray") -> Computation:
+        comps = Computation()
+
+        comps.t = self.t
+        comps.object = self.object
+
+        comps.point = ray.get_position(comps.t)
+        comps.eye = -ray.dir
+        comps.normal = self.object.normal_at(comps.point)
+
+        if comps.eye.dot(comps.normal) < 0:
+            comps.inside = True
+            comps.normal = -comps.normal
+
+        return comps
