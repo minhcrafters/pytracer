@@ -34,7 +34,7 @@ class Scene:
         for obj in self.objects:
             res = obj.intersect(ray)
 
-            for r in res:
+            for r in res.intersections:
                 total_inters.append(r)
 
         return Intersections(len(total_inters), total_inters)

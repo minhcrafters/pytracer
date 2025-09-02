@@ -83,13 +83,13 @@ class Matrix2:
     def __repr__(self):
         return f"Matrix2(\n{self.data}\n)"
 
-    def transpose(self):
+    def transpose(self) -> "Matrix2":
         return Matrix2(self.data.T)
 
     def determinant(self) -> np.float32:
         return self.data[0, 0] * self.data[1, 1] - self.data[1, 0] * self.data[0, 1]
 
-    def inverse(self):
+    def inverse(self) -> "Matrix2":
         a = self.data[0, 0]
         b = self.data[0, 1]
         c = self.data[1, 0]
@@ -227,7 +227,7 @@ class Matrix3:
     def __repr__(self):
         return f"Matrix3(\n{self.data}\n)"
 
-    def transpose(self):
+    def transpose(self) -> "Matrix3":
         return Matrix3(self.data.T)
 
     def submatrix(self, row: int, column: int) -> Matrix2:
@@ -251,14 +251,14 @@ class Matrix3:
         else:
             return -minor
 
-    def determinant(self):
+    def determinant(self) -> np.float32:
         c1 = self.cofactor(0, 0)
         c2 = self.cofactor(0, 1)
         c3 = self.cofactor(0, 2)
 
         return self.data[0, 0] * c1 + self.data[0, 1] * c2 + self.data[0, 2] * c3
 
-    def inverse(self):
+    def inverse(self) -> "Matrix3":
         mat = Matrix3()
 
         for y in range(3):
@@ -408,7 +408,7 @@ class Matrix4:
         else:
             return -minor
 
-    def determinant(self):
+    def determinant(self) -> "Matrix4":
         c1 = self.cofactor(0, 0)
         c2 = self.cofactor(0, 1)
         c3 = self.cofactor(0, 2)
@@ -421,7 +421,7 @@ class Matrix4:
             + self.data[0, 3] * c4
         )
 
-    def inverse(self):
+    def inverse(self) -> "Matrix4":
         mat = Matrix4()
 
         for y in range(4):
