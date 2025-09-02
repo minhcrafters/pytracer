@@ -1,7 +1,7 @@
-from dataclasses import dataclass
 import time
 
 import numpy as np
+
 from core.canvas import Canvas
 from core.color import Color
 from core.lights.light import Light
@@ -10,12 +10,12 @@ from core.materials.material import Material
 from core.math.matrices import Matrix4
 from core.math.vectors import Point3
 from core.objects.camera import Camera
+from core.objects.shapes.shape import Shape
+from core.objects.shapes.sphere import Sphere
 from core.rays.computation import Computation
 from core.rays.intersection import Intersection
 from core.rays.intersections import Intersections
 from core.rays.ray import Ray
-from core.objects.shapes.shape import Shape
-from core.objects.shapes.sphere import Sphere
 
 
 class Scene:
@@ -37,7 +37,7 @@ class Scene:
 
         objs = [s1, s2]
 
-        return cls(light, objs)
+        return cls(objs, light)
 
     def add_object(self, obj: Shape) -> None:
         self.objects.append(obj)
