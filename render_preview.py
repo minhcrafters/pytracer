@@ -19,6 +19,7 @@ class RenderPreview:
         self.clock = pygame.time.Clock()
 
         self.surface = pygame.Surface((width, height))
+        self.border = pygame.Surface((width, height), pygame.SRCALPHA)
         self.font = pygame.font.SysFont("Ubuntu Mono", 16)
 
         self.running = False
@@ -63,13 +64,25 @@ class RenderPreview:
                 (int(x * scale_x), int(y * scale_y), int(scale_x), int(scale_y)),
             )
 
+            self.border.fill((0, 0, 0, 0))
+            pygame.draw.rect(
+                self.border,
+                (128, 128, 128, 255),
+                (
+                    int(x * scale_x) - 1,
+                    int(y * scale_y) - 1,
+                    int(scale_x) + 1,
+                    int(scale_y) + 1,
+                ),
+                width=1,
+            )
+
             pixel_count += 1
 
-            if pixel_count % update_frequency == 0 or pixel_count == total_pixels:
-                self._update_display(scene, pixel_count, total_pixels)
+            self._update_display(pixel_count, total_pixels)
 
-        if self.running:
-            self._update_display(scene, pixel_count, total_pixels, final=True)
+        # if self.running:
+        #     self._update_display(pixel_count, total_pixels, final=True)
 
         return canvas
 
@@ -87,14 +100,14 @@ class RenderPreview:
             if event.type == pygame.QUIT:
                 self.running = False
 
-    def _update_display(
-        self, scene: Scene, pixel_count: int, total_pixels: int, final: bool = False
-    ):
-        """Update the pygame display with progress info."""
+    def _update_display(self, pixel_count: int, total_pixels: int, final: bool = False):
         self.screen.fill((0, 0, 0))
-        self.screen.blit(
-            pygame.transform.smoothscale(self.surface, (self.width, self.height)), (0, 0)
-        )
+        scaled_base = pygame.transform.smoothscale(self.surface, (self.width, self.height))
+        scaled_border = pygame.transform.smoothscale(self.border, (self.width, self.height))
+        composited = scaled_base.copy()
+        composited.blit(scaled_border, (0, 0))
+
+        self.screen.blit(composited, (0, 0))
 
         progress_percent = (pixel_count / total_pixels) * 100
         progress_text = "Rendering: {:.1f}%".format(progress_percent)
@@ -105,12 +118,8 @@ class RenderPreview:
         text_surf = self.font.render(progress_text, True, (255, 255, 255))
         self.screen.blit(text_surf, (10, 10))
 
-        controls_text = "Click X to cancel"
-        controls_surf = self.font.render(controls_text, True, (200, 200, 200))
-        self.screen.blit(controls_surf, (10, self.height - 30))
-
         pygame.display.flip()
-        self.clock.tick(60)
+        self.clock.tick(240)
 
     def cleanup(self):
         """Clean up pygame resources."""

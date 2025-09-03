@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from core.color import Color
 from core.materials.material import Material
 from core.math.vectors import Point3, Vector3
+from core.objects.shapes.shape import Shape
 from core.rays.ray import Ray
 
 
@@ -18,6 +19,7 @@ class Light:
     @staticmethod
     def lighting(
         material: Material,
+        obj: Shape,
         light: "Light",
         point: Point3,
         eye: Vector3,
@@ -28,7 +30,12 @@ class Light:
         diffuse = Color(0, 0, 0)
         specular = Color(0, 0, 0)
 
-        eff_color = material.color * light.intensity
+        if material.pattern:
+            color = material.pattern.at_object(obj, point)
+        else:
+            color = material.color
+
+        eff_color = color * light.intensity
 
         light_vec = (light.position - point).normalize()
 

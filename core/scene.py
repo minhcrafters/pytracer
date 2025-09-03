@@ -60,23 +60,23 @@ class Scene:
 
         return Intersections(len(total_inters), total_inters)
 
-    def shade_hit(self, comps: Computation) -> Color:
+    def shade_hit(self, comps: Computation, bounce_limit: int = 2) -> Color:
         is_shadowed = self.is_shadowed(comps.over_point)
-
-        return Light.lighting(
+        surface = Light.lighting(
             comps.object.material,
+            comps.object,
             self.light,
             comps.over_point,
             comps.eye,
             comps.normal,
             is_shadowed,
         )
+        reflected = self.reflected_color(comps, bounce_limit)
 
-    def color_at(self, ray: Ray) -> Color:
+        return Color.from_vector(surface + reflected)
+
+    def color_at(self, ray: Ray, bounce_limit: int = 2) -> Color:
         inters = self.intersect_scene(ray)
-
-        if len(inters.intersections) <= 0:
-            return Color(0, 0, 0)
 
         # find the hit from the resulting intersections
         if inters.count > 0:
@@ -85,7 +85,7 @@ class Scene:
             return Color(0, 0, 0)
 
         comps = hit.prepare_computations(ray)
-        color = self.shade_hit(comps)
+        color = self.shade_hit(comps, bounce_limit)
 
         return color
 
@@ -107,6 +107,18 @@ class Scene:
             return True
 
         return False
+
+    def reflected_color(self, comps: Computation, bounce_limit: int = 2) -> Color:
+        if comps.object.material.reflective == 0.0:
+            return Color(0, 0, 0)
+
+        if bounce_limit <= 0:
+            return Color(0, 0, 0)
+
+        reflect_ray = Ray(comps.over_point, comps.reflect)
+        color = self.color_at(reflect_ray, bounce_limit - 1)
+
+        return color * comps.object.material.reflective
 
     def render(self, camera: Camera) -> Canvas:
         canvas = Canvas(camera.hsize, camera.vsize)

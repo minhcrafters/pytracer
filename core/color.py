@@ -100,7 +100,7 @@ class Color(Point3):
         return cls.from_uint8(int(r, 16), int(g, 16), int(b, 16), int(a, 16))
 
     def __mul__(self, other):
-        if isinstance(other, Color):
+        if isinstance(other, (Color, Point3)):
             return Color(self.x * other.x, self.y * other.y, self.z * other.z, self.a)
         elif isinstance(other, Number):
             return Color(self.x * other, self.y * other, self.z * other, self.a)

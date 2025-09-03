@@ -33,6 +33,10 @@ class Shape:
         Returns:
             Intersections: A list of intersections
         """
+        ray = ray.transform(self.transform.inverse())
+        return self._intersect(ray)
+
+    def _intersect(self, ray: "Ray") -> "Intersections":
         return NotImplemented
 
     def normal_at(self, point: Point3) -> Vector3:
@@ -49,4 +53,12 @@ class Shape:
         Returns:
             Vector3: The normal vector at `point`
         """
+        local_point = Point3.from_xyzw(self.transform.inverse()[:] @ point.to_xyzw())
+        local_normal = self._normal_at(local_point)
+        world_normal = self.transform.inverse().transpose()[:] @ local_normal.to_xyzw()
+        world_normal[3] = 0.0
+        world_normal = Vector3.from_xyzw(world_normal)
+        return world_normal.normalized()
+
+    def _normal_at(self, point: Point3) -> Vector3:
         return NotImplemented

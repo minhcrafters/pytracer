@@ -367,22 +367,24 @@ class Matrix4:
 
         return m_orientation @ Matrix4.translation(-p_from.x, -p_from.y, -p_from.z)
 
-    def __add__(self, other):
+    def __add__(self, other: "Matrix4"):
         return Matrix4(self.data + other.data)
 
-    def __sub__(self, other):
+    def __sub__(self, other: "Matrix4"):
         return Matrix4(self.data - other.data)
 
     def __neg__(self):
         return Matrix4(-self.data)
 
-    def __mul__(self, scalar):
-        if isinstance(scalar, (int, float)):
-            return Matrix4(self.data * scalar)
+    def __mul__(self, other):
+        if isinstance(other, (int, float, np.number)):
+            return Matrix4(self.data * other)
+        if isinstance(other, (Point3, Vector3)):
+            return Matrix4(self.data * other.to_xyzw())
         raise TypeError("Can only multiply Matrix4 by scalar")
 
-    def __rmul__(self, scalar):
-        return self.__mul__(scalar)
+    def __rmul__(self, other):
+        return self.__mul__(other)
 
     def __truediv__(self, scalar):
         if isinstance(scalar, (int, float)):

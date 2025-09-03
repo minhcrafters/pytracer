@@ -570,7 +570,7 @@ class Point3:
         )
 
     def _coerce_vector(self, other):
-        if isinstance(other, Vector3):
+        if isinstance(other, (Vector3, Point3)):
             return other
         if isinstance(other, (int, float, np.number)):
             return Vector3(np.float32(other), np.float32(other), np.float32(other))
@@ -581,7 +581,7 @@ class Point3:
         Point + Vector -> Point
         Numeric scalar will be interpreted as uniform translation (rarely used).
         """
-        if isinstance(other, Vector3) or isinstance(other, (int, float, np.number)):
+        if isinstance(other, (Vector3, Point3)) or isinstance(other, (int, float, np.number)):
             v = self._coerce_vector(other)
             return Point3(self.x + v.x, self.y + v.y, self.z + v.z)
         raise TypeError("Can only add a Vector3 (or scalar) to a Point3")

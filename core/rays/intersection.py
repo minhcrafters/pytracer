@@ -30,6 +30,8 @@ class Intersection:
             comps.inside = True
             comps.normal = -comps.normal
 
+        comps.reflect = ray.dir.reflect(comps.normal)
+
         comps.over_point = comps.point + comps.normal * EPSILON
 
         return comps

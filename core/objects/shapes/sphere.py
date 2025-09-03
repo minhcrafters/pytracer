@@ -1,9 +1,7 @@
 from typing import Optional
 import numpy as np
 
-from core.rays.ray import Ray
-
-from core.math.vectors import Point3, Vector3
+from core.math.vectors import Point3
 from core.rays.intersection import Intersection
 from core.rays.intersections import Intersections
 from core.objects.shapes.shape import Shape
@@ -16,16 +14,14 @@ class Sphere(Shape):
         radius: np.float32 = 1.0,
     ):
         super().__init__()
-        
+
         self.center = center if center is not None else Point3(0, 0, 0)
         self.radius = radius
 
     def __repr__(self):
-        return f"Sphere(id={self.id}, center={self.center}, radius={self.radius}, transform={self.transform})"
+        return f"Sphere(center={self.center}, radius={self.radius}, transform={self.transform}, material={self.material})"
 
-    def intersect(self, ray):
-        ray = Ray.transform(ray, self.transform.inverse())
-
+    def _intersect(self, ray):
         # quadratic: |O + tD|^2 - r^2 = 0
         L = ray.origin - self.center
         a = ray.dir.dot(ray.dir)
@@ -51,11 +47,5 @@ class Sphere(Shape):
 
         return Intersections(count, intersections)
 
-    def normal_at(self, point: Point3):
-        world_point = point
-        obj_point = Point3.from_xyzw(self.transform.inverse()[:] @ world_point.to_xyzw())
-        obj_normal = obj_point - self.center
-        world_mat = self.transform.inverse().transpose()[:] @ obj_normal.to_xyzw()
-        world_mat[3] = 0
-        world_normal = Vector3.from_xyzw(world_mat)
-        return world_normal.normalize()
+    def _normal_at(self, local_point: Point3):
+        return local_point - self.center

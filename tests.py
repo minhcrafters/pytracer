@@ -6,9 +6,13 @@ from core.constants import EPSILON
 from core.lights.light import Light
 from core.lights.point_light import PointLight
 from core.materials.material import Material
+from core.materials.pattern.gradient import GradientPattern
+from core.materials.pattern.ring import RingPattern
+from core.materials.pattern.striped import StripedPattern
 from core.math.matrices import Matrix2, Matrix4
 from core.math.vectors import Point3, Vector3
 from core.objects.camera import Camera
+from core.objects.shapes.plane import Plane
 from core.objects.shapes.sphere import Sphere
 from core.rays.intersection import Intersection
 from core.rays.ray import Ray
@@ -25,7 +29,7 @@ def test_matrices():
 
 def test_ray_sphere_intersect():
     sphere = Sphere()
-    ray = Ray(Point3(0, 0, 5), Vector3(0, 0, 1), 10)
+    ray = Ray(Point3(0, 0, 5), Vector3(0, 0, 1))
 
     intersect = sphere.intersect(ray)
 
@@ -34,7 +38,7 @@ def test_ray_sphere_intersect():
 
 def test_ray_sphere_hit():
     sphere = Sphere()
-    ray = Ray(Point3(0, 0, -5), Vector3(0, 0, 1), 10)
+    ray = Ray(Point3(0, 0, -5), Vector3(0, 0, 1))
 
     hit = Ray.hit(ray, sphere)
 
@@ -43,7 +47,7 @@ def test_ray_sphere_hit():
 
 
 def test_ray_transform():
-    ray = Ray(Point3(1, 2, 3), Vector3(0, 1, 0), 10)
+    ray = Ray(Point3(1, 2, 3), Vector3(0, 1, 0))
 
     t_ray = Ray.transform(ray, Matrix4.translation(3, 4, 5))
 
@@ -58,7 +62,7 @@ def test_ray_transform():
 
 def test_ray_sphere_transform():
     sphere = Sphere()
-    ray = Ray(Point3(0, 0, -5), Vector3(0, 0, 1), 10)
+    ray = Ray(Point3(0, 0, -5), Vector3(0, 0, 1))
 
     sphere.transform = Matrix4.scaling(2, 2, 2)
 
@@ -283,10 +287,10 @@ def test_surface_in_shadow():
 
     in_shadow = True
 
-    material = Material.default()
+    shape = Sphere()
     position = Point3(0, 0, 0)
 
-    color = Light.lighting(material, light, position, eye, normal, in_shadow)
+    color = Light.lighting(shape.material, shape, light, position, eye, normal, in_shadow)
 
     assert color == Color(0.1, 0.1, 0.1)
 
@@ -327,15 +331,92 @@ def test_shade_hit_inters():
 
     assert color == Color(0.1, 0.1, 0.1)
 
+
 def test_acne():
     ray = Ray(Point3(0, 0, -5), Vector3(0, 0, 1))
-    
+
     shape = Sphere()
     shape.transform = Matrix4.translation(0, 0, 1)
-    
+
     inter = Intersection(5, shape)
-    
+
     comps = inter.prepare_computations(ray)
-    
+
     assert comps.over_point.z < -EPSILON / 2
     assert comps.point.z > comps.over_point.z
+
+
+def test_striped_pattern():
+    pattern = StripedPattern()
+
+    assert pattern.a_color == Color(1, 1, 1)
+    assert pattern.b_color == Color(0, 0, 0)
+
+
+def test_striped_pattern_alternating():
+    pattern = StripedPattern()
+
+    assert pattern.at(Point3(0, 0, 0)) == Color(1, 1, 1)
+
+    assert pattern.at(Point3(0, 1, 0)) == Color(1, 1, 1)
+    assert pattern.at(Point3(0, 2, 0)) == Color(1, 1, 1)
+
+    assert pattern.at(Point3(0, 0, 1)) == Color(1, 1, 1)
+    assert pattern.at(Point3(0, 0, 2)) == Color(1, 1, 1)
+
+    assert pattern.at(Point3(0.9, 0, 0)) == Color(1, 1, 1)
+    assert pattern.at(Point3(1, 0, 0)) == Color(0, 0, 0)
+    assert pattern.at(Point3(-0.1, 0, 0)) == Color(0, 0, 0)
+    assert pattern.at(Point3(-1, 0, 0)) == Color(0, 0, 0)
+    assert pattern.at(Point3(-1.1, 0, 0)) == Color(1, 1, 1)
+
+
+def test_material_striped_pattern():
+    shape = Sphere()
+    mat = shape.material
+
+    mat.pattern = StripedPattern()
+    mat.ambient = 1.0
+    mat.diffuse = 0.0
+    mat.specular = 0.0
+
+    eye = Vector3(0, 0, -1)
+    normal = Vector3(0, 0, -1)
+
+    light = PointLight(Point3(0, 0, -10), Color(1, 1, 1))
+
+    c1 = Light.lighting(mat, shape, light, Point3(0.9, 0, 0), eye, normal, False)
+    c2 = Light.lighting(mat, shape, light, Point3(1.1, 0, 0), eye, normal, False)
+
+    assert c1 == Color(1, 1, 1)
+    assert c2 == Color(0, 0, 0)
+
+
+def test_ring_pattern():
+    pattern = GradientPattern()
+
+    assert pattern.at(Point3(0, 0, 0)) == Color(1, 1, 1)
+    assert pattern.at(Point3(0.25, 0, 0)) == Color(0.75, 0.75, 0.75)
+    assert pattern.at(Point3(0.5, 0, 0)) == Color(0.5, 0.5, 0.5)
+    assert pattern.at(Point3(0.75, 0, 0)) == Color(0.25, 0.25, 0.25)
+
+
+def test_ring_pattern():
+    pattern = RingPattern()
+
+    assert pattern.at(Point3(0, 0, 0)) == Color(1, 1, 1)
+    assert pattern.at(Point3(1, 0, 0)) == Color(0, 0, 0)
+    assert pattern.at(Point3(0, 0, 1)) == Color(0, 0, 0)
+    assert pattern.at(Point3(0.708, 0, 0.708)) == Color(0, 0, 0)
+
+
+def test_reflect_vector():
+    shape = Plane()
+
+    ray = Ray(Point3(0, 1, -1), Vector3(0, -np.sqrt(2) / 2, np.sqrt(2) / 2))
+
+    inter = Intersection(np.sqrt(2), shape)
+
+    comps = inter.prepare_computations(ray)
+    
+    assert comps.reflect == Vector3(0, np.sqrt(2) / 2, np.sqrt(2) / 2)

@@ -7,9 +7,12 @@ from core.color import Color
 from core.lights.light import Light
 from core.lights.point_light import PointLight
 from core.materials.material import Material
+from core.materials.pattern.checkered import CheckeredPattern
+from core.materials.pattern.striped import StripedPattern
 from core.math.matrices import Matrix4
 from core.math.vectors import Point3, Vector2, Vector3
 from core.objects.camera import Camera
+from core.objects.shapes.plane import Plane
 from core.objects.shapes.sphere import Sphere
 from core.rays.ray import Ray
 from core.scene import Scene
@@ -152,31 +155,31 @@ def draw_example_scene():
     scene = Scene()
     scene.light = PointLight(Point3(-10, 10, -10), Color(1, 1, 1))
 
-    floor = Sphere()
-    floor.transform = Matrix4.scaling(10, 0.01, 10)
-    floor.material.color = Color(1, 0.9, 0.9)
+    floor = Plane()
+    floor.material.color = Color(1, 1, 1)
     floor.material.specular = 0.0
+    floor.material.reflective = 0.5
     scene.add_object(floor)
 
-    left_wall = Sphere()
-    left_wall.transform = (
-        Matrix4.identity()
-        .translate(Vector3(0, 0, 5))
-        .rotate_along_y(-np.pi / 4)
-        .rotate_along_x(np.pi / 2)
-        .scale(Vector3(10, 0.01, 10))
-    )
-    scene.add_object(left_wall)
+    # left_wall = Sphere()
+    # left_wall.transform = (
+    #     Matrix4.identity()
+    #     .translate(Vector3(0, 0, 5))
+    #     .rotate_along_y(-np.pi / 4)
+    #     .rotate_along_x(np.pi / 2)
+    #     .scale(Vector3(10, 0.01, 10))
+    # )
+    # scene.add_object(left_wall)
 
-    right_wall = Sphere()
-    right_wall.transform = (
-        Matrix4.identity()
-        .translate(Vector3(0, 0, 5))
-        .rotate_along_y(np.pi / 4)
-        .rotate_along_x(np.pi / 2)
-        .scale(Vector3(10, 0.01, 10))
-    )
-    scene.add_object(right_wall)
+    # right_wall = Sphere()
+    # right_wall.transform = (
+    #     Matrix4.identity()
+    #     .translate(Vector3(0, 0, 5))
+    #     .rotate_along_y(np.pi / 4)
+    #     .rotate_along_x(np.pi / 2)
+    #     .scale(Vector3(10, 0.01, 10))
+    # )
+    # scene.add_object(right_wall)
 
     middle = Sphere()
     middle.transform = Matrix4.translation(-0.5, 1, 0.5)

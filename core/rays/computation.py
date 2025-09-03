@@ -13,5 +13,6 @@ class Computation:
     point: Point3 | None = None
     eye: Vector3 | None = None
     normal: Vector3 | None = None
+    reflect: Vector3 | None = None
     inside: bool = False
     over_point: Point3 | None = None

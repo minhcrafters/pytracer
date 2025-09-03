@@ -27,9 +27,8 @@ class Ray:
 
         return inters if inters else None
 
-    @staticmethod
-    def transform(ray: "Ray", mat: Matrix4) -> "Ray":
-        origin = ray.origin.to_xyzw() @ mat[:].T
-        dir = ray.dir.to_xyzw() @ mat[:].T
+    def transform(self, mat: Matrix4) -> "Ray":
+        origin = self.origin.to_xyzw() @ mat[:].T
+        dir = self.dir.to_xyzw() @ mat[:].T
 
         return Ray(Point3.from_xyzw(origin), Vector3.from_xyzw(dir))
