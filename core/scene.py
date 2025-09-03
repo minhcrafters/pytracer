@@ -60,10 +60,9 @@ class Scene:
 
         return Intersections(len(total_inters), total_inters)
 
-    def shade_hit(self, comps: Computation, bounce_limit: int = 2) -> Color:
-        is_shadowed = self.is_shadowed(comps.over_point)
-        surface = Light.lighting(
-            comps.object.material,
+    def shade_hit(self, comps: Computation, bounce_limit: int = 4) -> Color:
+        is_shadowed = comps.cast_shadow and self.is_shadowed(comps.over_point)
+        surface = comps.object.material.lit(
             comps.object,
             self.light,
             comps.over_point,
@@ -72,10 +71,20 @@ class Scene:
             is_shadowed,
         )
         reflected = self.reflected_color(comps, bounce_limit)
+        refracted = self.refracted_color(comps, bounce_limit)
 
-        return Color.from_vector(surface + reflected)
+        material = comps.object.material
 
-    def color_at(self, ray: Ray, bounce_limit: int = 2) -> Color:
+        if material.reflective > 0 and material.transparency > 0:
+            reflectance = Computation.fresnel_schlick(comps)
+
+            return Color.from_vector(
+                surface + reflected * reflectance + refracted * (1 - reflectance)
+            )
+
+        return Color.from_vector(surface + reflected + refracted)
+
+    def color_at(self, ray: Ray, bounce_limit: int = 4) -> Color:
         inters = self.intersect_scene(ray)
 
         # find the hit from the resulting intersections
@@ -84,7 +93,7 @@ class Scene:
         else:
             return Color(0, 0, 0)
 
-        comps = hit.prepare_computations(ray)
+        comps = hit.prepare_computations(ray, inters)
         color = self.shade_hit(comps, bounce_limit)
 
         return color
@@ -108,7 +117,7 @@ class Scene:
 
         return False
 
-    def reflected_color(self, comps: Computation, bounce_limit: int = 2) -> Color:
+    def reflected_color(self, comps: Computation, bounce_limit: int = 4) -> Color:
         if comps.object.material.reflective == 0.0:
             return Color(0, 0, 0)
 
@@ -119,6 +128,23 @@ class Scene:
         color = self.color_at(reflect_ray, bounce_limit - 1)
 
         return color * comps.object.material.reflective
+
+    def refracted_color(self, comps: Computation, bounce_limit: int = 4) -> Color:
+        if comps.object.material.transparency == 0.0:
+            return Color(0, 0, 0)
+
+        n_ratio = comps.n1 / comps.n2
+        cos_i = comps.eye.dot(comps.normal)
+        sin2_t = n_ratio**2 * (1 - cos_i**2)
+
+        cos_t = np.sqrt(1 - sin2_t)
+
+        dir = comps.normal * (n_ratio * cos_i - cos_t) - comps.eye * n_ratio
+        refract_ray = Ray(comps.under_point, dir)
+
+        color = self.color_at(refract_ray, bounce_limit - 1) * comps.object.material.transparency
+
+        return color
 
     def render(self, camera: Camera) -> Canvas:
         canvas = Canvas(camera.hsize, camera.vsize)

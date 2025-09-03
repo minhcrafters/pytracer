@@ -18,6 +18,18 @@ class Sphere(Shape):
         self.center = center if center is not None else Point3(0, 0, 0)
         self.radius = radius
 
+    @classmethod
+    def solid(cls, center: Point3 = Point3(0, 0, 0), radius: int = 1.0):
+        return cls(center, radius)
+
+    @classmethod
+    def glass(cls, center: Point3 = Point3(0, 0, 0), radius: int = 1.0):
+        sphere = cls(center, radius)
+        sphere.material.transparency = 1.0
+        sphere.material.reflective = 1.0
+        sphere.material.ior = 1.5
+        return sphere
+
     def __repr__(self):
         return f"Sphere(center={self.center}, radius={self.radius}, transform={self.transform}, material={self.material})"
 

@@ -144,7 +144,7 @@ def draw_sphere_shaded():
                 normal = sphere.normal_at(point)
                 eye = -ray.dir
 
-                color = Light.lighting(sphere.material, light, point, eye, normal)
+                color = sphere.material.lit(sphere, light, point, eye, normal, False)
 
                 c.set_pixel(x, y, color)
 
@@ -156,36 +156,36 @@ def draw_example_scene():
     scene.light = PointLight(Point3(-10, 10, -10), Color(1, 1, 1))
 
     floor = Plane()
-    floor.material.color = Color(1, 1, 1)
-    floor.material.specular = 0.0
-    floor.material.reflective = 0.5
+    floor.material.pattern = CheckeredPattern()
+    floor.material.reflective = 0.25
     scene.add_object(floor)
 
-    # left_wall = Sphere()
-    # left_wall.transform = (
-    #     Matrix4.identity()
-    #     .translate(Vector3(0, 0, 5))
-    #     .rotate_along_y(-np.pi / 4)
-    #     .rotate_along_x(np.pi / 2)
-    #     .scale(Vector3(10, 0.01, 10))
-    # )
-    # scene.add_object(left_wall)
+    left_wall = Plane()
+    left_wall.material.pattern = CheckeredPattern()
+    left_wall.transform = (
+        Matrix4.identity()
+        .translate(Vector3(0, 0, 5))
+        .rotate_along_y(-np.pi / 4)
+        .rotate_along_x(np.pi / 2)
+    )
+    scene.add_object(left_wall)
 
-    # right_wall = Sphere()
-    # right_wall.transform = (
-    #     Matrix4.identity()
-    #     .translate(Vector3(0, 0, 5))
-    #     .rotate_along_y(np.pi / 4)
-    #     .rotate_along_x(np.pi / 2)
-    #     .scale(Vector3(10, 0.01, 10))
-    # )
-    # scene.add_object(right_wall)
+    right_wall = Plane()
+    right_wall.material.pattern = CheckeredPattern()
+    right_wall.transform = (
+        Matrix4.identity()
+        .translate(Vector3(0, 0, 5))
+        .rotate_along_y(np.pi / 4)
+        .rotate_along_x(np.pi / 2)
+    )
+    scene.add_object(right_wall)
 
-    middle = Sphere()
+    middle = Sphere.glass()
     middle.transform = Matrix4.translation(-0.5, 1, 0.5)
-    middle.material.color = Color(0.1, 1, 0.5)
-    middle.material.diffuse = 0.7
-    middle.material.specular = 0.3
+    # middle.material.color = Color(0.1, 1, 0.5)
+    middle.material.diffuse = 0.0
+    middle.material.specular = 1.0
+    # middle.material.ambient = 0.1
     scene.add_object(middle)
 
     right = Sphere()

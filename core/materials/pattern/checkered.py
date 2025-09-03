@@ -12,7 +12,7 @@ class CheckeredPattern(Pattern):
         self.b_color = b_color if b_color is not None else Color(0, 0, 0)
 
     def at(self, point: Point3):
-        if (np.abs(point.x) + np.abs(point.y) + np.abs(point.z)) % 2 == 0:
+        if (np.floor(point.x) + np.floor(point.y) + np.floor(point.z)) % 2 == 0:
             return self.a_color
         else:
             return self.b_color

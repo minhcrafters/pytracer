@@ -62,6 +62,14 @@ class Color(Point3):
     def b(self, val: Number):
         self.z = np.float32(max(0.0, min(1.0, float(val))))
 
+    @classmethod
+    def white(cls):
+        return cls(1, 1, 1, 1)
+
+    @classmethod
+    def black(cls):
+        return cls(0, 0, 0, 1)
+
     # --- Constructors ---
     @classmethod
     def from_floats(cls, r: float, g: float, b: float, a: float = 1.0) -> "Color":

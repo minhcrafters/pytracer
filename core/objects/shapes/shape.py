@@ -14,9 +14,11 @@ class Shape:
         self,
         transform: Optional[Matrix4] = None,
         material: Optional[Material] = None,
+        cast_shadow: bool = True,
     ):
         self.transform = transform if transform is not None else Matrix4.identity()
         self.material = material if material is not None else Material.default()
+        self.cast_shadow = cast_shadow
 
     def __repr__(self):
         return f"Shape(transform={self.transform}, material={self.material})"
