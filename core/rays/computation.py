@@ -14,3 +14,4 @@ class Computation:
     eye: Vector3 | None = None
     normal: Vector3 | None = None
     inside: bool = False
+    over_point: Point3 | None = None

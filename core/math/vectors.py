@@ -417,11 +417,11 @@ class Vector3:
 
     @property
     def magnitude(self) -> np.float32:
-        return np.float32(np.sqrt(np.float32(self.sqr_magnitude)))
+        return np.sqrt(self.sqr_magnitude)
 
     def normalized(self) -> "Vector3":
         mag = np.float32(self.magnitude)
-        if mag == 0.0:
+        if np.isclose(mag, 0.0):
             return Vector3.zero()
         inv = np.float32(1.0 / mag)
         return Vector3(self.x * inv, self.y * inv, self.z * inv)
@@ -429,7 +429,7 @@ class Vector3:
     def normalize(self) -> "Vector3":
         """In-place normalization. Returns self."""
         mag = np.float32(self.magnitude)
-        if mag == 0:
+        if np.isclose(mag, 0.0):
             self.x = self.y = self.z = np.float32(0.0)
             return self
         inv = np.float32(1.0 / mag)

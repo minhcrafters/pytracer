@@ -12,7 +12,6 @@ from core.objects.shapes.shape import Shape
 class Ray:
     origin: Point3
     dir: Vector3
-    t: np.float32 = np.inf
 
     def get_position(self, t: np.float32) -> Point3:
         pos = self.origin + self.dir * t
@@ -33,4 +32,4 @@ class Ray:
         origin = ray.origin.to_xyzw() @ mat[:].T
         dir = ray.dir.to_xyzw() @ mat[:].T
 
-        return Ray(Point3.from_xyzw(origin), Vector3.from_xyzw(dir), ray.t)
+        return Ray(Point3.from_xyzw(origin), Vector3.from_xyzw(dir))

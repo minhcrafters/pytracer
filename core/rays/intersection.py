@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
+from core.constants import EPSILON
 from core.rays.computation import Computation
 
 if TYPE_CHECKING:
@@ -28,5 +29,7 @@ class Intersection:
         if comps.eye.dot(comps.normal) < 0:
             comps.inside = True
             comps.normal = -comps.normal
+
+        comps.over_point = comps.point + comps.normal * EPSILON
 
         return comps

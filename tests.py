@@ -1,7 +1,11 @@
 import numpy as np
 
+from core import scene
 from core.color import Color
+from core.constants import EPSILON
+from core.lights.light import Light
 from core.lights.point_light import PointLight
+from core.materials.material import Material
 from core.math.matrices import Matrix2, Matrix4
 from core.math.vectors import Point3, Vector3
 from core.objects.camera import Camera
@@ -269,4 +273,69 @@ def test_camera_render():
 
     canvas = scene.render(cam)
 
-    assert np.allclose(canvas.get_pixel(5, 5), Color(0.3806612, 0.47582647, 0.2854959).to_array())
+    assert canvas.get_pixel(5, 5) == Color(0.3806612, 0.47582647, 0.2854959)
+
+
+def test_surface_in_shadow():
+    eye = Vector3(0, 0, -1)
+    normal = Vector3(0, 0, -1)
+    light = PointLight(Point3(0, 0, -10), Color(1, 1, 1))
+
+    in_shadow = True
+
+    material = Material.default()
+    position = Point3(0, 0, 0)
+
+    color = Light.lighting(material, light, position, eye, normal, in_shadow)
+
+    assert color == Color(0.1, 0.1, 0.1)
+
+
+def test_is_shadowed():
+    scene = Scene.test_scene()
+
+    point = Point3(0, 10, 0)
+    assert scene.is_shadowed(point) == False
+
+    point = Point3(10, -10, 10)
+    assert scene.is_shadowed(point) == True
+
+    point = Point3(-20, 20, -20)
+    assert scene.is_shadowed(point) == False
+
+    point = Point3(-2, -2, -2)
+    assert scene.is_shadowed(point) == False
+
+
+def test_shade_hit_inters():
+    scene = Scene()
+
+    scene.light = PointLight(Point3(0, 0, -10), Color(1, 1, 1))
+
+    s1 = Sphere()
+    scene.add_object(s1)
+
+    s2 = Sphere()
+    s2.transform = Matrix4.translation(0, 0, 10)
+    scene.add_object(s2)
+
+    ray = Ray(Point3(0, 0, 5), Vector3(0, 0, 1))
+    inter = Intersection(4, s2)
+
+    comps = inter.prepare_computations(ray)
+    color = scene.shade_hit(comps)
+
+    assert color == Color(0.1, 0.1, 0.1)
+
+def test_acne():
+    ray = Ray(Point3(0, 0, -5), Vector3(0, 0, 1))
+    
+    shape = Sphere()
+    shape.transform = Matrix4.translation(0, 0, 1)
+    
+    inter = Intersection(5, shape)
+    
+    comps = inter.prepare_computations(ray)
+    
+    assert comps.over_point.z < -EPSILON / 2
+    assert comps.point.z > comps.over_point.z

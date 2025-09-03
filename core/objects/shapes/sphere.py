@@ -1,3 +1,4 @@
+from typing import Optional
 import numpy as np
 
 from core.rays.ray import Ray
@@ -11,11 +12,12 @@ from core.objects.shapes.shape import Shape
 class Sphere(Shape):
     def __init__(
         self,
-        center: Point3 = Point3(0, 0, 0),
+        center: Optional[Point3] = None,
         radius: np.float32 = 1.0,
     ):
         super().__init__()
-        self.center = center
+        
+        self.center = center if center is not None else Point3(0, 0, 0)
         self.radius = radius
 
     def __repr__(self):

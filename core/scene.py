@@ -61,8 +61,15 @@ class Scene:
         return Intersections(len(total_inters), total_inters)
 
     def shade_hit(self, comps: Computation) -> Color:
+        is_shadowed = self.is_shadowed(comps.over_point)
+
         return Light.lighting(
-            comps.object.material, self.light, comps.point, comps.eye, comps.normal
+            comps.object.material,
+            self.light,
+            comps.over_point,
+            comps.eye,
+            comps.normal,
+            is_shadowed,
         )
 
     def color_at(self, ray: Ray) -> Color:
@@ -71,12 +78,35 @@ class Scene:
         if len(inters.intersections) <= 0:
             return Color(0, 0, 0)
 
-        closest_inter = inters.intersections[0]
+        # find the hit from the resulting intersections
+        if inters.count > 0:
+            hit = inters.intersections[0]
+        else:
+            return Color(0, 0, 0)
 
-        comps = closest_inter.prepare_computations(ray)
-        hit = self.shade_hit(comps)
+        comps = hit.prepare_computations(ray)
+        color = self.shade_hit(comps)
 
-        return hit
+        return color
+
+    def is_shadowed(self, point: Point3) -> bool:
+        v = self.light.position - point
+        dist = v.magnitude
+        dir = v.normalized()
+
+        ray = Ray(point, dir)
+
+        inters = self.intersect_scene(ray)
+
+        if inters.count > 0:
+            hit = inters.intersections[0]
+        else:
+            return False
+
+        if hit and hit.t < dist:
+            return True
+
+        return False
 
     def render(self, camera: Camera) -> Canvas:
         canvas = Canvas(camera.hsize, camera.vsize)

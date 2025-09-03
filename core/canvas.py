@@ -91,7 +91,7 @@ class Canvas:
             arr = self._normalize_colorlike(color)
             self.pixels[np.uint16(np.round(y)), np.uint16(np.round(x)), :] = arr
 
-    def get_pixel(self, x: int, y: int, as_color: bool = False):
+    def get_pixel(self, x: int, y: int, as_color: bool = True):
         """Get pixel at (x, y). If as_color=True and a Color class exists, returns Color; otherwise numpy array."""
         if not self._check_coords(x, y):
             return

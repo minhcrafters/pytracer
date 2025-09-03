@@ -16,7 +16,14 @@ class Light:
         return cls(Point3(0, 0, 0), Color(1, 1, 1))
 
     @staticmethod
-    def lighting(material: Material, light: "Light", point: Point3, eye: Vector3, normal: Vector3):
+    def lighting(
+        material: Material,
+        light: "Light",
+        point: Point3,
+        eye: Vector3,
+        normal: Vector3,
+        in_shadow: bool = False,
+    ):
         ambient = Color(0, 0, 0)
         diffuse = Color(0, 0, 0)
         specular = Color(0, 0, 0)
@@ -26,6 +33,13 @@ class Light:
         light_vec = (light.position - point).normalize()
 
         ambient = eff_color * material.ambient
+
+        if in_shadow:
+            return Color(
+                ambient.x,
+                ambient.y,
+                ambient.z,
+            )
 
         light_dot_normal = light_vec.dot(normal)
 
