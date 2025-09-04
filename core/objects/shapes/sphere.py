@@ -62,5 +62,6 @@ class Sphere(Shape):
     def local_normal_at(self, local_point: Point3):
         return local_point - self.center
 
+    @property
     def bounds(self):
         return Bounds(Point3(-1, -1, -1), Point3(1, 1, 1))

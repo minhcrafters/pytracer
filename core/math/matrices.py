@@ -406,6 +406,9 @@ class Matrix4:
     def __repr__(self):
         return f"Matrix4(\n{self.data}\n)"
 
+    def copy(self):
+        return Matrix4(self.data)
+
     def transpose(self):
         return Matrix4(self.data.T)
 

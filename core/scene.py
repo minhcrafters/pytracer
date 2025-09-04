@@ -51,8 +51,11 @@ class Scene:
         for obj in self.objects:
             res = obj.intersect(ray)
 
-            for r in res.intersections:
-                total_inters.append(r)
+            # broken shape returned
+            if isinstance(res, list):
+                continue
+
+            total_inters.extend(res.intersections)
 
         total_inters = list(filter(lambda x: x.t > 0, total_inters))
 

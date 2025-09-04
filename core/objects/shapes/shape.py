@@ -1,9 +1,12 @@
 from typing import TYPE_CHECKING, Optional
 
+import numpy as np
+
+from core.constants import EPSILON
 from core.materials.material import Material
 from core.math.matrices import Matrix4
 from core.math.vectors import Point3, Vector3
-from core.opt.bounds import _DISPATCH, Bounds
+from core.opt.bounds import Bounds
 from core.utils import normal_to_world, world_to_object
 
 if TYPE_CHECKING:
@@ -21,7 +24,7 @@ class Shape:
         parent: Optional["Group"] = None,
     ):
         self.transform = transform if transform is not None else Matrix4.identity()
-        self.material = material if material is not None else Material.default()
+        self.material = material if material is not None else Material.white()
         self.cast_shadow = cast_shadow
         self.parent = parent
         self.local_bounds = None
@@ -42,6 +45,10 @@ class Shape:
             Intersections: A list of intersections
         """
         ray = ray.transform(self.transform.inverse())
+
+        if not self.check_bounds_intersections(ray):
+            return Intersections()
+
         return self.local_intersect(ray)
 
     def local_intersect(self, ray: "Ray") -> "Intersections":
@@ -68,5 +75,48 @@ class Shape:
     def local_normal_at(self, point: Point3) -> Vector3:
         return NotImplemented
 
+    def check_bounds_intersections(self, ray: "Ray") -> bool:
+        x_tmin, x_tmax = self._check_axis(
+            ray.origin.x, ray.dir.x, self.bounds.minimum.x, self.bounds.maximum.x
+        )
+
+        if x_tmin > x_tmax:
+            return False
+
+        y_tmin, y_tmax = self._check_axis(
+            ray.origin.y, ray.dir.y, self.bounds.minimum.y, self.bounds.maximum.y
+        )
+
+        if y_tmin > y_tmax:
+            return False
+
+        z_tmin, z_tmax = self._check_axis(
+            ray.origin.z, ray.dir.z, self.bounds.minimum.z, self.bounds.maximum.z
+        )
+
+        if z_tmin > z_tmax:
+            return False
+
+        return True
+
+    def _check_axis(
+        self, origin: np.float32, dir: np.float32, min_b: np.float32, max_b: np.float32
+    ):
+        tmin = min_b - origin
+        tmax = max_b - origin
+
+        if np.abs(dir) >= EPSILON:
+            tmin = tmin / dir
+            tmax = tmax / dir
+        else:
+            tmin = tmin * np.inf
+            tmax = tmax * np.inf
+
+        if tmin > tmax:
+            tmin, tmax = tmax, tmin
+
+        return tmin, tmax
+
+    @property
     def bounds(self) -> Bounds:
         return NotImplemented

@@ -119,7 +119,13 @@ class RenderPreview:
             progress_text = f"Rendering Complete!"
 
         text_surf = self.font.render(progress_text, True, (255, 255, 255))
-        self.screen.blit(text_surf, (10, 10))
+        text_rect = text_surf.get_rect(topleft=(10, 10))
+
+        bg_surf = pygame.Surface(text_rect.inflate(20, 12).size, pygame.SRCALPHA)
+        bg_surf.fill((0, 0, 0, 128))
+
+        bg_surf.blit(text_surf, (10, 6))
+        self.screen.blit(bg_surf, text_rect.topleft)
 
         pygame.display.flip()
         self.clock.tick(120)

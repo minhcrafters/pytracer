@@ -25,8 +25,21 @@ class Material:
     ior: np.float32 = 1.0
 
     @classmethod
-    def default(cls):
+    def white(cls):
         return cls(Color(1, 1, 1))
+
+    def copy(self):
+        return Material(
+            self.color,
+            self.pattern,
+            self.ambient,
+            self.diffuse,
+            self.specular,
+            self.shininess,
+            self.reflective,
+            self.transparency,
+            self.ior,
+        )
 
     def lit(
         self,

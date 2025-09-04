@@ -33,17 +33,23 @@ class Cube(Shape):
         return f"Cube(center={self.center}, transform={self.transform}, material={self.material})"
 
     def local_intersect(self, ray):
-        x_tmin, x_tmax = self._check_axis(ray.origin.x, ray.dir.x)
+        x_tmin, x_tmax = self._check_axis(
+            ray.origin.x, ray.dir.x, self.bounds.minimum.x, self.bounds.maximum.x
+        )
 
         if x_tmin > x_tmax:
             return Intersections()
 
-        y_tmin, y_tmax = self._check_axis(ray.origin.y, ray.dir.y)
+        y_tmin, y_tmax = self._check_axis(
+            ray.origin.y, ray.dir.y, self.bounds.minimum.y, self.bounds.maximum.y
+        )
 
         if y_tmin > y_tmax:
             return Intersections()
 
-        z_tmin, z_tmax = self._check_axis(ray.origin.z, ray.dir.z)
+        z_tmin, z_tmax = self._check_axis(
+            ray.origin.z, ray.dir.z, self.bounds.minimum.z, self.bounds.maximum.z
+        )
 
         if z_tmin > z_tmax:
             return Intersections()
@@ -67,21 +73,6 @@ class Cube(Shape):
 
         return Vector3(0, 0, local_point.z)
 
-    def _check_axis(self, origin: np.float32, dir: np.float32):
-        tmin = -1 - origin
-        tmax = 1 - origin
-
-        if np.abs(dir) >= EPSILON:
-            tmin = tmin / dir
-            tmax = tmax / dir
-        else:
-            tmin = tmin * np.inf
-            tmax = tmax * np.inf
-
-        if tmin > tmax:
-            tmin, tmax = tmax, tmin
-
-        return tmin, tmax
-
+    @property
     def bounds(self):
         return Bounds(Point3(-1, -1, -1), Point3(1, 1, 1))

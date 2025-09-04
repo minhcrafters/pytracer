@@ -89,6 +89,7 @@ class Cylinder(Shape):
 
         return Vector3(local_point.x, 0, local_point.z)
 
+    @property
     def bounds(self):
         if self.closed:
             return Bounds(Point3(-1, self.minimum, -1), Point3(1, self.maximum, 1))

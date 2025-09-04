@@ -25,5 +25,6 @@ class Plane(Shape):
     def local_normal_at(self, local_point: Point3):
         return Vector3(0, 1, 0)
 
+    @property
     def bounds(self):
         return Bounds(Point3(-np.inf, 0, -np.inf), Point3(np.inf, 0, np.inf))
