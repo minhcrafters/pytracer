@@ -1,7 +1,9 @@
 from typing import Optional
 import numpy as np
 
+from core.color import Color
 from core.math.vectors import Point3
+from core.opt.bounds import Bounds
 from core.rays.intersection import Intersection
 from core.rays.intersections import Intersections
 from core.objects.shapes.shape import Shape
@@ -25,15 +27,16 @@ class Sphere(Shape):
     @classmethod
     def glass(cls, center: Point3 = Point3(0, 0, 0), radius: int = 1.0):
         sphere = cls(center, radius)
+        sphere.material.color = Color(0, 0, 0)
         sphere.material.transparency = 1.0
-        sphere.material.reflective = 1.0
+        sphere.material.reflective = 0.9
         sphere.material.ior = 1.5
         return sphere
 
     def __repr__(self):
         return f"Sphere(center={self.center}, radius={self.radius}, transform={self.transform}, material={self.material})"
 
-    def _intersect(self, ray):
+    def local_intersect(self, ray):
         # quadratic: |O + tD|^2 - r^2 = 0
         L = ray.origin - self.center
         a = ray.dir.dot(ray.dir)
@@ -42,22 +45,22 @@ class Sphere(Shape):
         det = b**2 - 4 * a * c
 
         intersections: list[Intersection] = []
-        count = 0
 
         if det > 0:
             intersections.append(Intersection((-b + np.sqrt(det)) / (2 * a), self))
             intersections.append(Intersection((-b - np.sqrt(det)) / (2 * a), self))
-            count = 2
         elif det == 0:
             intersections.append(Intersection(-b / (2 * a), self))
             intersections.append(Intersection(-b / (2 * a), self))
-            count = 2
         elif det < 0:
             pass
 
         intersections.sort(key=lambda x: x.t)
 
-        return Intersections(count, intersections)
+        return Intersections(intersections)
 
-    def _normal_at(self, local_point: Point3):
+    def local_normal_at(self, local_point: Point3):
         return local_point - self.center
+
+    def bounds(self):
+        return Bounds(Point3(-1, -1, -1), Point3(1, 1, 1))

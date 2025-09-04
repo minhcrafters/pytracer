@@ -576,6 +576,11 @@ class Point3:
             return Vector3(np.float32(other), np.float32(other), np.float32(other))
         raise TypeError(f"Unsupported operand for Point3 and {type(other)}")
 
+    def __neg__(self, other):
+        if not isinstance(other, Point3):
+            return False
+        return Point3(-self.x, -self.y, -self.z)
+
     def __add__(self, other):
         """
         Point + Vector -> Point

@@ -17,24 +17,27 @@ class Computation:
     inside: bool = False
     over_point: Point3 | None = None
     under_point: Point3 | None = None
-    cast_shadow: bool = True
+    cast_shadows: bool = True
     n1: np.float32 = 1.0
     n2: np.float32 = 1.0
 
-    @staticmethod
-    def fresnel_schlick(comps: "Computation"):
-        cos = comps.eye.dot(comps.normal)
+    def compute_fresnel(self) -> np.float32:
+        # using schlick's approximation
 
-        if comps.n1 > comps.n2:
-            n = comps.n1 / comps.n2
+        cos = self.eye.dot(self.normal)
+
+        # Total internal reflection can only occur if n1 > n2
+        if self.n1 > self.n2:
+            n = self.n1 / self.n2
             sin2_t = n**2 * (1 - cos**2)
 
             if sin2_t > 1.0:
                 return 1.0
 
+            # For transmission, use cos(theta_t) instead
             cos_t = np.sqrt(1 - sin2_t)
             cos = cos_t
 
-        r0 = ((comps.n1 - comps.n2) / (comps.n1 + comps.n2)) ** 2
+        r0 = ((self.n1 - self.n2) / (self.n1 + self.n2)) ** 2
 
         return r0 + (1 - r0) * (1 - cos) ** 5

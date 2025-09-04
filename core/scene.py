@@ -58,10 +58,10 @@ class Scene:
 
         total_inters.sort(key=lambda x: x.t)
 
-        return Intersections(len(total_inters), total_inters)
+        return Intersections(total_inters)
 
     def shade_hit(self, comps: Computation, bounce_limit: int = 4) -> Color:
-        is_shadowed = comps.cast_shadow and self.is_shadowed(comps.over_point)
+        is_shadowed = comps.cast_shadows and self.is_shadowed(comps.over_point)
         surface = comps.object.material.lit(
             comps.object,
             self.light,
@@ -76,7 +76,7 @@ class Scene:
         material = comps.object.material
 
         if material.reflective > 0 and material.transparency > 0:
-            reflectance = Computation.fresnel_schlick(comps)
+            reflectance = comps.compute_fresnel()
 
             return Color.from_vector(
                 surface + reflected * reflectance + refracted * (1 - reflectance)
@@ -133,12 +133,18 @@ class Scene:
         if comps.object.material.transparency == 0.0:
             return Color(0, 0, 0)
 
+        if bounce_limit <= 0:
+            return Color(0, 0, 0)
+
         n_ratio = comps.n1 / comps.n2
         cos_i = comps.eye.dot(comps.normal)
         sin2_t = n_ratio**2 * (1 - cos_i**2)
 
-        cos_t = np.sqrt(1 - sin2_t)
+        if sin2_t > 1.0:
+            # Total internal reflection
+            return Color(0, 0, 0)
 
+        cos_t = np.sqrt(1 - sin2_t)
         dir = comps.normal * (n_ratio * cos_i - cos_t) - comps.eye * n_ratio
         refract_ray = Ray(comps.under_point, dir)
 

@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from core.color import Color
-from core.materials.pattern.pattern import Pattern
+from core.patterns.pattern import Pattern
 from core.math.vectors import Point3, Vector3
 
 if TYPE_CHECKING:

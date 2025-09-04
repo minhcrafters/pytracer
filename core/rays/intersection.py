@@ -22,7 +22,7 @@ class Intersection:
 
         comps.t = self.t
         comps.object = self.object
-        comps.cast_shadow = self.object.cast_shadow
+        comps.cast_shadows = self.object.cast_shadow
 
         comps.point = ray.get_position(comps.t)
         comps.eye = -ray.dir
@@ -37,25 +37,32 @@ class Intersection:
         comps.over_point = comps.point + comps.normal * EPSILON
         comps.under_point = comps.point - comps.normal * EPSILON
 
+        # Find n1 and n2 for refraction
         containers: list[Shape] = []
 
-        for i in inters.intersections:
-            if i == self:
+        for inter in inters.intersections:
+            if inter == self:
+                # It's the hit intersection
                 if len(containers) == 0:
                     comps.n1 = 1.0
                 else:
                     comps.n1 = containers[-1].material.ior
-
-            if containers.count(comps.object) > 0:
-                containers.remove(comps.object)
-            else:
-                containers.append(comps.object)
-
-            if i == self:
-                if len(containers) == 0:
-                    comps.n2 = 1.0
-                else:
-                    comps.n2 = containers[-1].material.ior
                 break
+
+            if inter.object in containers:
+                containers.remove(inter.object)
+            else:
+                containers.append(inter.object)
+
+        # Now simulate entering the object to find n2
+        if self.object in containers:
+            containers.remove(self.object)
+        else:
+            containers.append(self.object)
+
+        if len(containers) == 0:
+            comps.n2 = 1.0
+        else:
+            comps.n2 = containers[-1].material.ior
 
         return comps

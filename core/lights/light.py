@@ -1,10 +1,7 @@
 from dataclasses import dataclass
 
 from core.color import Color
-from core.materials.material import Material
-from core.math.vectors import Point3, Vector3
-from core.objects.shapes.shape import Shape
-from core.rays.ray import Ray
+from core.math.vectors import Point3
 
 
 @dataclass

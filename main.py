@@ -7,8 +7,10 @@ from core.color import Color
 from core.lights.light import Light
 from core.lights.point_light import PointLight
 from core.materials.material import Material
-from core.materials.pattern.checkered import CheckeredPattern
-from core.materials.pattern.striped import StripedPattern
+from core.objects.shapes.cube import Cube
+from core.objects.shapes.cylinder import Cylinder
+from core.patterns.checkered import CheckeredPattern
+from core.patterns.striped import StripedPattern
 from core.math.matrices import Matrix4
 from core.math.vectors import Point3, Vector2, Vector3
 from core.objects.camera import Camera
@@ -156,12 +158,11 @@ def draw_example_scene():
     scene.light = PointLight(Point3(-10, 10, -10), Color(1, 1, 1))
 
     floor = Plane()
-    floor.material.pattern = CheckeredPattern()
-    floor.material.reflective = 0.25
+    floor.material.pattern = CheckeredPattern(b_color=Color(0.5, 0.5, 0.5))
     scene.add_object(floor)
 
     left_wall = Plane()
-    left_wall.material.pattern = CheckeredPattern()
+    left_wall.material.pattern = CheckeredPattern(b_color=Color(0.5, 0.5, 0.5))
     left_wall.transform = (
         Matrix4.identity()
         .translate(Vector3(0, 0, 5))
@@ -171,7 +172,7 @@ def draw_example_scene():
     scene.add_object(left_wall)
 
     right_wall = Plane()
-    right_wall.material.pattern = CheckeredPattern()
+    right_wall.material.pattern = CheckeredPattern(b_color=Color(0.5, 0.5, 0.5))
     right_wall.transform = (
         Matrix4.identity()
         .translate(Vector3(0, 0, 5))
@@ -180,33 +181,43 @@ def draw_example_scene():
     )
     scene.add_object(right_wall)
 
-    middle = Sphere.glass()
-    middle.transform = Matrix4.translation(-0.5, 1, 0.5)
+    middle = Cylinder.solid()
+    middle.maximum = 1.0
+    middle.transform = (
+        Matrix4.identity()
+        .translate(Vector3(0, 0.5, 0.5))
+        .scale(Vector3(0.5, 0.5, 0.5))
+        # .rotate_along_y(np.deg2rad(40))
+    )
     # middle.material.color = Color(0.1, 1, 0.5)
     middle.material.diffuse = 0.0
     middle.material.specular = 1.0
+    middle.material.reflective = 1.0
     # middle.material.ambient = 0.1
     scene.add_object(middle)
 
-    right = Sphere()
+    right = Cube()
     right.transform = (
-        Matrix4.identity().translate(Vector3(1.5, 0.5, -0.5)).scale(Vector3(0.5, 0.5, 0.5))
+        Matrix4.identity()
+        .translate(Vector3(1.5, 0.5, -0.5))
+        .scale(Vector3(0.5, 0.5, 0.5))
+        .rotate_along_y(np.deg2rad(-60))
     )
     right.material.color = Color(0.5, 1, 0.1)
     right.material.diffuse = 0.7
     right.material.specular = 0.3
     scene.add_object(right)
 
-    left = Sphere()
+    left = Sphere.glass()
     left.transform = (
         Matrix4.identity().translate(Vector3(-1.5, 0.33, -0.75)).scale(Vector3(0.33, 0.33, 0.33))
     )
-    left.material.color = Color(1, 0.8, 0.1)
-    left.material.diffuse = 0.7
-    left.material.specular = 0.3
+    # left.material.color = Color(1, 0.8, 0.1)
+    # left.material.diffuse = 0.7
+    # left.material.specular = 0.3
     scene.add_object(left)
 
-    cam = Camera(100, 50, np.pi / 3)
+    cam = Camera(100, 50, np.deg2rad(60))
     cam.transform = Matrix4.view_transform(Point3(0, 1.5, -5), Point3(0, 1, 0), Vector3(0, 1, 0))
 
     canvas = render_scene_with_preview(scene, cam, window_width=1000, window_height=500)

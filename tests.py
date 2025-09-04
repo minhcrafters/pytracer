@@ -6,14 +6,15 @@ from core.constants import EPSILON
 from core.lights.light import Light
 from core.lights.point_light import PointLight
 from core.materials.material import Material
-from core.materials.pattern.checkered import CheckeredPattern
-from core.materials.pattern.gradient import GradientPattern
-from core.materials.pattern.ring import RingPattern
-from core.materials.pattern.striped import StripedPattern
+from core.patterns.checkered import CheckeredPattern
+from core.patterns.gradient import GradientPattern
+from core.patterns.ring import RingPattern
+from core.patterns.striped import StripedPattern
 from core.math.matrices import Matrix2, Matrix4
 from core.math.vectors import Point3, Vector3
 from core.objects.camera import Camera
 from core.objects.shapes.plane import Plane
+from core.objects.shapes.cylinder import Cylinder
 from core.objects.shapes.sphere import Sphere
 from core.rays.computation import Computation
 from core.rays.intersection import Intersection
@@ -95,7 +96,7 @@ def test_prepare_computations():
 
     inter = Intersection(4, sphere)
 
-    comps = inter.prepare_computations(ray, Intersections(1, [inter]))
+    comps = inter.prepare_computations(ray, Intersections([inter]))
 
     assert comps.t == inter.t
     assert comps.object == inter.object
@@ -110,7 +111,7 @@ def test_inside_or_not():
 
     inter = Intersection(4, sphere)
 
-    comps = inter.prepare_computations(ray, Intersections(1, [inter]))
+    comps = inter.prepare_computations(ray, Intersections([inter]))
 
     assert comps.inside == False
 
@@ -121,7 +122,7 @@ def test_inside_or_not_2():
 
     inter = Intersection(1, sphere)
 
-    comps = inter.prepare_computations(ray, Intersections(1, [inter]))
+    comps = inter.prepare_computations(ray, Intersections([inter]))
 
     assert comps.point == Point3(0, 0, 1)
     assert comps.eye == Vector3(0, 0, -1)
@@ -136,7 +137,7 @@ def test_shading_intersection():
     shape = scene.objects[0]
     inter = Intersection(4, shape)
 
-    comps = inter.prepare_computations(ray, Intersections(1, [inter]))
+    comps = inter.prepare_computations(ray, Intersections([inter]))
     color = scene.shade_hit(comps)
 
     assert np.allclose(color.to_array(), Color(0.3806612, 0.47582647, 0.2854959).to_array())
@@ -150,7 +151,7 @@ def test_shading_intersection_from_inside():
     shape = scene.objects[1]
     inter = Intersection(0.5, shape)
 
-    comps = inter.prepare_computations(ray, Intersections(1, [inter]))
+    comps = inter.prepare_computations(ray, Intersections([inter]))
     color = scene.shade_hit(comps)
 
     assert np.allclose(color.to_array(), Color(0.9049845, 0.9049845, 0.9049845).to_array())
@@ -315,7 +316,7 @@ def test_shade_hit_inters():
     ray = Ray(Point3(0, 0, 5), Vector3(0, 0, 1))
     inter = Intersection(4, s2)
 
-    comps = inter.prepare_computations(ray, Intersections(1, [inter]))
+    comps = inter.prepare_computations(ray, Intersections([inter]))
     color = scene.shade_hit(comps)
 
     assert color == Color(0.1, 0.1, 0.1)
@@ -329,7 +330,7 @@ def test_acne():
 
     inter = Intersection(5, shape)
 
-    comps = inter.prepare_computations(ray, Intersections(1, [inter]))
+    comps = inter.prepare_computations(ray, Intersections([inter]))
 
     assert comps.over_point.z < -EPSILON / 2
     assert comps.point.z > comps.over_point.z
@@ -430,7 +431,7 @@ def test_reflect_vector():
 
     inter = Intersection(np.sqrt(2), shape)
 
-    comps = inter.prepare_computations(ray, Intersections(1, [inter]))
+    comps = inter.prepare_computations(ray, Intersections([inter]))
 
     assert comps.reflect == Vector3(0, np.sqrt(2) / 2, np.sqrt(2) / 2)
 
@@ -474,7 +475,7 @@ def test_finding_n1_and_n2():
         Intersection(6, A),
     ]
 
-    xs = Intersections(len(ints), ints)
+    xs = Intersections(ints)
 
     scene = Scene(objects=[A, B, C])
     scene.intersect_scene(ray)
@@ -512,7 +513,7 @@ def test_the_under_point_offset():
 
     inter = Intersection(5, shape)
 
-    comps = inter.prepare_computations(ray, Intersections(1, [inter]))
+    comps = inter.prepare_computations(ray, Intersections([inter]))
 
     assert comps.under_point.z > -EPSILON / 2
     assert comps.point.z < comps.under_point.z
@@ -530,7 +531,7 @@ def test_reflected_color_for_nonreflective_material():
 
     inter = Intersection(1, s)
 
-    comps = inter.prepare_computations(ray, Intersections(1, [inter]))
+    comps = inter.prepare_computations(ray, Intersections([inter]))
 
     color = scene.reflected_color(comps)
 
@@ -538,7 +539,7 @@ def test_reflected_color_for_nonreflective_material():
 
 
 def test_reflected_color_for_reflective_material():
-    scene = Scene()
+    scene = Scene.test_scene()
 
     shape = Plane()
     shape.material.reflective = 0.5
@@ -550,7 +551,7 @@ def test_reflected_color_for_reflective_material():
 
     inter = Intersection(0.7071067811865476, shape)
 
-    comps = inter.prepare_computations(ray, Intersections(1, [inter]))
+    comps = inter.prepare_computations(ray, Intersections([inter]))
 
     color = scene.reflected_color(comps, 5)
 
@@ -569,7 +570,7 @@ def test_reflected_color_at_maximum_recursive_depth():
 
     inter = Intersection(1, shape)
 
-    comps = inter.prepare_computations(ray, Intersections(1, [inter]))
+    comps = inter.prepare_computations(ray, Intersections([inter]))
 
     color = scene.reflected_color(comps, 0)
 
@@ -583,7 +584,7 @@ def test_refracted_color_with_an_opaque_surface():
 
     ray = Ray(Point3(0, 0, -5), Vector3(0, 0, 1))
 
-    inters = Intersections(2, [Intersection(4, s), Intersection(6, s)])
+    inters = Intersections([Intersection(4, s), Intersection(6, s)])
 
     comps = Intersection.prepare_computations(Intersection(4, s), ray, inters)
 
@@ -602,7 +603,7 @@ def test_refracted_color_at_maximum_recursive_depth():
 
     ray = Ray(Point3(0, 0, -5), Vector3(0, 0, 1))
 
-    inters = Intersections(2, [Intersection(4, s), Intersection(6, s)])
+    inters = Intersections([Intersection(4, s), Intersection(6, s)])
 
     comps = Intersection.prepare_computations(Intersection(4, s), ray, inters)
 
@@ -621,7 +622,7 @@ def test_refracted_color_under_total_internal_reflection():
 
     ray = Ray(Point3(0, 0, np.sqrt(2) / 2), Vector3(0, 1, 0))
 
-    inters = Intersections(2, [Intersection(-np.sqrt(2) / 2, s), Intersection(np.sqrt(2) / 2, s)])
+    inters = Intersections([Intersection(-np.sqrt(2) / 2, s), Intersection(np.sqrt(2) / 2, s)])
 
     comps = Intersection.prepare_computations(Intersection(np.sqrt(2) / 2, s), ray, inters)
 
@@ -645,7 +646,6 @@ def test_refracted_color_with_a_refracted_ray():
     ray = Ray(Point3(0, 0, 0.1), Vector3(0, 1, 0))
 
     inters = Intersections(
-        6,
         [
             Intersection(-0.9899, A),
             Intersection(-0.4899, B),
@@ -674,7 +674,7 @@ def test_shade_hit_with_a_reflective_material():
 
     inter = Intersection(0.7071067811865476, shape)
 
-    comps = inter.prepare_computations(ray, Intersections(1, [inter]))
+    comps = inter.prepare_computations(ray, Intersections([inter]))
 
     color = scene.shade_hit(comps)
 
@@ -702,7 +702,7 @@ def test_shade_hit_with_a_transparent_material():
 
     inter = Intersection(np.sqrt(2), floor)
 
-    comps = inter.prepare_computations(ray, Intersections(1, [inter]))
+    comps = inter.prepare_computations(ray, Intersections([inter]))
 
     color = scene.shade_hit(comps, 5)
 
@@ -714,11 +714,11 @@ def test_schlick_approximation_under_total_internal_reflection():
 
     ray = Ray(Point3(0, 0, np.sqrt(2) / 2), Vector3(0, 1, 0))
 
-    inters = Intersections(2, [Intersection(-np.sqrt(2) / 2, s), Intersection(np.sqrt(2) / 2, s)])
+    inters = Intersections([Intersection(-np.sqrt(2) / 2, s), Intersection(np.sqrt(2) / 2, s)])
 
     comps = Intersection.prepare_computations(Intersection(np.sqrt(2) / 2, s), ray, inters)
 
-    reflectance = Computation.fresnel_schlick(comps)
+    reflectance = comps.compute_fresnel()
 
     assert reflectance == 1.0
 
@@ -728,11 +728,11 @@ def test_schlick_approximation_with_perpendicular_viewing_angle():
 
     ray = Ray(Point3(0, 0, 0), Vector3(0, 1, 0))
 
-    inters = Intersections(2, [Intersection(-1, s), Intersection(1, s)])
+    inters = Intersections([Intersection(-1, s), Intersection(1, s)])
 
     comps = Intersection.prepare_computations(Intersection(1, s), ray, inters)
 
-    reflectance = Computation.fresnel_schlick(comps)
+    reflectance = comps.compute_fresnel()
 
     assert abs(reflectance - 0.04) < 0.01
 
@@ -742,11 +742,11 @@ def test_schlick_approximation_with_small_angle_and_n2_greater_than_n1():
 
     ray = Ray(Point3(0, 0.99, -2), Vector3(0, 0, 1))
 
-    inters = Intersections(1, [Intersection(1.8589, s)])
+    inters = Intersections([Intersection(1.8589, s)])
 
     comps = Intersection.prepare_computations(Intersection(1.8589, s), ray, inters)
 
-    reflectance = Computation.fresnel_schlick(comps)
+    reflectance = comps.compute_fresnel()
 
     assert abs(reflectance - 0.48873) < 0.01
 
@@ -771,8 +771,32 @@ def test_shade_hit_with_a_reflective_transparent_material():
 
     inter = Intersection(np.sqrt(2), floor)
 
-    comps = inter.prepare_computations(ray, Intersections(1, [inter]))
+    comps = inter.prepare_computations(ray, Intersections([inter]))
 
     color = scene.shade_hit(comps, 5)
 
     assert np.allclose(color.to_array(), Color(0.93391, 0.69643, 0.69243).to_array())
+
+
+def test_cylinder_ray_misses():
+    cyl = Cylinder()
+    direction = Vector3(0, 1, 0)
+    r = Ray(Point3(1, 0, -5), direction)
+    xs = cyl.local_intersect(r)
+    assert xs.count == 0
+
+
+def test_ray_strikes_cylinder():
+    cyl = Cylinder()
+    examples = [
+        (Point3(1, 0, -5), Vector3(0, 0, 1), 5, 5),
+        (Point3(0, 0, -5), Vector3(0, 0, 1), 4, 6),
+        (Point3(0.5, 0, -5), Vector3(0.1, 1, 1).normalized(), 6.80798, 7.08872),
+    ]
+
+    for origin, direction, t0_expected, t1_expected in examples:
+        r = Ray(origin, direction)
+        xs = cyl.local_intersect(r)
+        assert xs.count == 2
+        assert np.isclose(xs.intersections[0].t, t0_expected)
+        assert np.isclose(xs.intersections[1].t, t1_expected)

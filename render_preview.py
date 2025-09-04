@@ -81,8 +81,8 @@ class RenderPreview:
 
             self._update_display(pixel_count, total_pixels)
 
-        # if self.running:
-        #     self._update_display(pixel_count, total_pixels, final=True)
+        if self.running:
+            self._update_display(pixel_count, total_pixels, final=True)
 
         return canvas
 
@@ -99,6 +99,9 @@ class RenderPreview:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    self.running = False
 
     def _update_display(self, pixel_count: int, total_pixels: int, final: bool = False):
         self.screen.fill((0, 0, 0))
@@ -113,13 +116,13 @@ class RenderPreview:
         progress_text = "Rendering: {:.1f}%".format(progress_percent)
 
         if final:
-            progress_text = f"Rendering Complete! {progress_text}"
+            progress_text = f"Rendering Complete!"
 
         text_surf = self.font.render(progress_text, True, (255, 255, 255))
         self.screen.blit(text_surf, (10, 10))
 
         pygame.display.flip()
-        self.clock.tick(240)
+        self.clock.tick(120)
 
     def cleanup(self):
         """Clean up pygame resources."""

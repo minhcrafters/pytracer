@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING
 from core.color import Color
 from core.math.matrices import Matrix4
 from core.math.vectors import Point3
+from core.utils import world_to_object
 
 if TYPE_CHECKING:
     from core.objects.shapes.shape import Shape
@@ -15,7 +16,7 @@ class Pattern:
         return NotImplemented
 
     def at_object(self, obj: "Shape", world_point: Point3) -> Color:
-        obj_point = Point3.from_xyzw(obj.transform.inverse()[:] @ world_point.to_xyzw())
+        obj_point = world_to_object(obj, world_point)
         pattern_point = Point3.from_xyzw(self.transform.inverse()[:] @ obj_point.to_xyzw())
 
         return self.at(pattern_point)
