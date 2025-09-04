@@ -5,7 +5,6 @@ from typing import Iterable
 import numpy as np
 import pywavefront
 import tqdm
-from core.constants import EPSILON
 from core.math.vectors import Point3
 from core.objects.shapes.shape import Shape
 from core.objects.shapes.triangle import Triangle

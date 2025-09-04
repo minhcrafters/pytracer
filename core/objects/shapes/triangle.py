@@ -19,7 +19,7 @@ class Triangle(Shape):
         self.e2 = p3 - p1
 
         self.normal = self.e2.cross(self.e1).normalized()
-        
+
     def __repr__(self):
         return f"Triangle(p1={self.p1}, p2={self.p2}, p3={self.p3})"
 
