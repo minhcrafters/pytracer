@@ -1,0 +1,51 @@
+{
+    "camera": {
+        "width": 100,
+        "height": 50,
+        "fov": 60,
+        "view_transform": {
+            "from": [0, 1.5, -5],
+            "to": [0, 1, 0],
+            "up": [0, 1, 0]
+        }
+    },
+    "light": {
+        "at": [-10, 10, -10],
+        "intensity": [1, 1, 1]
+    },
+    "objects": [
+        {
+            "type": "plane",
+            "material": {
+                "pattern": {
+                    "type": "checkered",
+                    "b_color": [0.5, 0.5, 0.5],
+                    "a_color": [1, 1, 1]
+                }
+            }
+        },
+        {
+            "type": "plane",
+            "material": {
+                "pattern": {
+                    "type": "checkered",
+                    "b_color": [0.5, 0.5, 0.5],
+                    "a_color": [1, 1, 1]
+                }
+            },
+            "transform": [{ "translate": [0, 0, 5] }, { "rotate_x": 1.5707963267948966 }]
+        },
+        {
+            "type": "group",
+            "from-obj": "./examples/teapot.obj",
+            "material": {
+                "color": [1.0, 0.9, 0.9],
+                "ambient": 0.1,
+                "diffuse": 0.9,
+                "specular": 1.0,
+                "reflective": 1.0
+            },
+            "transform": [{ "translate": [0, 1, 0.5] }, { "scale": [0.5, 0.5, 0.5] }]
+        }
+    ]
+}

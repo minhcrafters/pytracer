@@ -1,11 +1,14 @@
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 import numpy as np
 
 from core.math.matrices import Matrix4
 from core.math.vectors import Point3, Vector3
-from core.rays.intersection import Intersection
 from core.objects.shapes.shape import Shape
+
+if TYPE_CHECKING:
+    from core.rays.intersection import Intersection
 
 
 @dataclass
@@ -18,7 +21,7 @@ class Ray:
         return pos
 
     @staticmethod
-    def hit(ray: "Ray", obj: Shape) -> list[Intersection]:
+    def hit(ray: "Ray", obj: Shape) -> list["Intersection"]:
         inters = obj.intersect(ray).intersections
 
         inters = list(filter(lambda x: x.t > 0, inters))

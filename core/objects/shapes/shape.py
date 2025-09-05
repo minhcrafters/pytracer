@@ -28,6 +28,7 @@ class Shape:
         self.cast_shadow = cast_shadow
         self.parent = parent
         self.local_bounds = None
+        self._inverse_transform = None  # Cache for inverse transform
 
     def __repr__(self):
         return f"Shape(transform={self.transform}, material={self.material})"

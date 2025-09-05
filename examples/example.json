@@ -1,0 +1,63 @@
+{
+    "camera": {
+        "width": 100,
+        "height": 50,
+        "fov": 60,
+        "view_transform": {
+            "from": [0, 1.5, -5],
+            "to": [0, 1, 0],
+            "up": [0, 1, 0]
+        }
+    },
+    "light": {
+        "at": [-10, 10, -10],
+        "intensity": [1, 1, 1]
+    },
+    "objects": [
+        {
+            "type": "plane",
+            "material": {
+                "pattern": {
+                    "type": "checkered",
+                    "b_color": [0.5, 0.5, 0.5],
+                    "a_color": [1, 1, 1]
+                }
+            }
+        },
+        {
+            "type": "cylinder",
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "closed": true,
+            "material": {
+                "diffuse": 0.0,
+                "specular": 1.0,
+                "reflective": 1.0
+            },
+            "transform": [{ "translate": [0, 1, 0.5] }, { "scale": [0.5, 0.5, 0.5] }]
+        },
+        {
+            "type": "cube",
+            "material": {
+                "color": [0.5, 1.0, 0.1],
+                "diffuse": 0.7,
+                "specular": 0.3
+            },
+            "transform": [{ "translate": [1.5, 0.5, -0.5] }, { "scale": [0.5, 0.5, 0.5] }, { "rotate_y": -1.0471975511965976 }]
+        },
+        {
+            "type": "sphere",
+            "material": {
+                "color": [1, 1, 1],
+                "ambient": 0.0,
+                "diffuse": 0.0,
+                "specular": 0.9,
+                "shininess": 200.0,
+                "reflective": 0.9,
+                "transparency": 1.0,
+                "refractive-index": 1.5
+            },
+            "transform": [{ "translate": [-1.5, 0.33, -0.75] }, { "scale": [0.33, 0.33, 0.33] }]
+        }
+    ]
+}

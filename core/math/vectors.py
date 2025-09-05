@@ -628,14 +628,10 @@ class Point3:
         )
 
     def distance_to(self, other: "Point3") -> np.float32:
-        return np.float32(
-            ((self.x - other.x) ** 2 + (self.y - other.y) ** 2 + (self.z - other.z) ** 2) ** 0.5
-        )
+        return np.sqrt(np.square(self.x - other.x) + np.square(self.y - other.y) + np.square(self.z - other.z))
 
     def distance_squared_to(self, other: "Point3") -> np.float32:
-        return np.float32(
-            (self.x - other.x) ** 2 + (self.y - other.y) ** 2 + (self.z - other.z) ** 2
-        )
+        return np.square(self.x - other.x) + np.square(self.y - other.y) + np.square(self.z - other.z)
 
     def translate(self, v: "Vector3") -> "Point3":
         """Return a new Point translated by vector v."""
@@ -735,10 +731,10 @@ class Point2:
         return bool(np.isclose(self.x, other.x) and np.isclose(self.y, other.y))
 
     def distance_to(self, other: "Point2") -> np.float32:
-        return np.float32(((self.x - other.x) ** 2 + (self.y - other.y) ** 2) ** 0.5)
+        return np.sqrt(np.square(self.x - other.x) + np.square(self.y - other.y))
 
     def distance_squared_to(self, other: "Point2") -> np.float32:
-        return np.float32((self.x - other.x) ** 2 + (self.y - other.y) ** 2)
+        return np.square(self.x - other.x) + np.square(self.y - other.y)
 
     def translate(self, v: "Vector2") -> "Point2":
         """Return a new Point translated by vector v."""

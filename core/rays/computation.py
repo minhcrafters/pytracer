@@ -9,14 +9,14 @@ from core.objects.shapes.shape import Shape
 @dataclass
 class Computation:
     t: np.float32 = 0.0
-    object: Shape | None = None
-    point: Point3 | None = None
-    eye: Vector3 | None = None
-    normal: Vector3 | None = None
-    reflect: Vector3 | None = None
+    object: Shape = None
+    point: Point3 = None
+    eye: Vector3 = None
+    normal: Vector3 = None
+    reflect: Vector3 = None
     inside: bool = False
-    over_point: Point3 | None = None
-    under_point: Point3 | None = None
+    over_point: Point3 = None
+    under_point: Point3 = None
     cast_shadows: bool = True
     n1: np.float32 = 1.0
     n2: np.float32 = 1.0
@@ -26,18 +26,16 @@ class Computation:
 
         cos = self.eye.dot(self.normal)
 
-        # Total internal reflection can only occur if n1 > n2
         if self.n1 > self.n2:
             n = self.n1 / self.n2
-            sin2_t = n**2 * (1 - cos**2)
+            sin2_t = np.power(n, 2) * (1 - np.power(cos, 2))
 
             if sin2_t > 1.0:
                 return 1.0
 
-            # For transmission, use cos(theta_t) instead
             cos_t = np.sqrt(1 - sin2_t)
             cos = cos_t
 
-        r0 = ((self.n1 - self.n2) / (self.n1 + self.n2)) ** 2
+        r0 = np.power((self.n1 - self.n2) / (self.n1 + self.n2), 2)
 
-        return r0 + (1 - r0) * (1 - cos) ** 5
+        return r0 + (1 - r0) * np.power(1 - cos, 5)

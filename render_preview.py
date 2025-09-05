@@ -1,4 +1,8 @@
-import numpy as np
+import multiprocessing as mp
+import os
+
+os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "hide"
+
 import pygame
 
 from core.canvas import Canvas
@@ -28,7 +32,7 @@ class RenderPreview:
         self, scene: Scene, camera: Camera, update_frequency: int = 1000
     ) -> Canvas:
         """
-        Render the scene with real-time pygame preview.
+        Render the scene with real-time pygame preview using parallel processing.
 
         Args:
             scene: The scene to render
@@ -40,54 +44,63 @@ class RenderPreview:
         """
         canvas = Canvas(camera.hsize, camera.vsize)
         total_pixels = camera.hsize * camera.vsize
-        pixel_count = 0
 
         scale_x = self.width / camera.hsize
         scale_y = self.height / camera.vsize
 
         self.running = True
 
-        for y, x in np.ndindex(camera.vsize, camera.hsize):
-            if not self.running:
-                break
+        pixels = [(x, y) for y in range(camera.vsize) for x in range(camera.hsize)]
 
-            self._handle_events()
+        processed_pixels = 0
 
-            ray = camera.ray_from_pixel(x, y)
-            color = scene.color_at(ray)
-            canvas.set_pixel(x, y, color)
+        with mp.Pool() as pool:
+            for i in range(0, len(pixels), update_frequency):
+                if not self.running:
+                    break
 
-            pygame_color = self._color_to_pygame(color)
-            pygame.draw.rect(
-                self.surface,
-                pygame_color,
-                (int(x * scale_x), int(y * scale_y), int(scale_x), int(scale_y)),
-            )
+                self._handle_events()
 
-            self.border.fill((0, 0, 0, 0))
-            pygame.draw.rect(
-                self.border,
-                (128, 128, 128, 255),
-                (
-                    int(x * scale_x) - 1,
-                    int(y * scale_y) - 1,
-                    int(scale_x) + 1,
-                    int(scale_y) + 1,
-                ),
-                width=1,
-            )
+                batch = pixels[i : i + update_frequency]
 
-            pixel_count += 1
+                batch_results = pool.starmap_async(
+                    _render_pixel_worker, [(scene, camera, x, y) for x, y in batch]
+                )
 
-            self._update_display(pixel_count, total_pixels)
+                batch_colors = batch_results.get()
+
+                for (x, y), color in zip(batch, batch_colors):
+                    canvas.set_pixel(x, y, color)
+
+                    pygame_color = self._color_to_pygame(color)
+                    pygame.draw.rect(
+                        self.surface,
+                        pygame_color,
+                        (int(x * scale_x), int(y * scale_y), int(scale_x), int(scale_y)),
+                    )
+
+                    self.border.fill((0, 0, 0, 0))
+                    pygame.draw.rect(
+                        self.border,
+                        (128, 128, 128, 255),
+                        (
+                            int(x * scale_x) - 1,
+                            int(y * scale_y) - 1,
+                            int(scale_x) + 1,
+                            int(scale_y) + 1,
+                        ),
+                        width=1,
+                    )
+
+                processed_pixels += len(batch)
+                self._update_display(processed_pixels, total_pixels)
 
         if self.running:
-            self._update_display(pixel_count, total_pixels, final=True)
+            self._update_display(processed_pixels, total_pixels, final=True)
 
         return canvas
 
     def _color_to_pygame(self, color: Color) -> tuple[int, int, int]:
-        """Convert ray tracer color to pygame RGB tuple."""
         return (
             max(0, min(255, round(color.r * 255))),
             max(0, min(255, round(color.g * 255))),
@@ -95,7 +108,6 @@ class RenderPreview:
         )
 
     def _handle_events(self):
-        """Handle pygame events."""
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
@@ -128,35 +140,39 @@ class RenderPreview:
         self.screen.blit(bg_surf, text_rect.topleft)
 
         pygame.display.flip()
-        self.clock.tick(120)
+        self.clock.tick(240)
 
     def cleanup(self):
-        """Clean up pygame resources."""
         pygame.quit()
 
     def wait_for_close(self):
-        """Wait for user to close the window."""
         self.running = True
         while self.running:
             self._handle_events()
-            self.clock.tick(60)
+            self.clock.tick(240)
 
 
-def render_scene_with_preview(
-    scene: Scene, camera: Camera, window_width: int = 800, window_height: int = 600
-) -> Canvas:
+def _render_pixel_worker(scene: Scene, camera: Camera, x: int, y: int) -> Color:
     """
-    Convenience function to render a scene with pygame preview.
+    Worker function for parallel pixel rendering.
+    This function must be at module level to be picklable for multiprocessing.
 
     Args:
         scene: Scene to render
-        camera: Camera configuration
-        window_width: Width of the preview window
-        window_height: Height of the preview window
+        camera: Camera settings
+        x: Pixel x coordinate
+        y: Pixel y coordinate
 
     Returns:
-        Rendered canvas
+        Color for the pixel
     """
+    ray = camera.ray_from_pixel(x, y)
+    return scene.color_at(ray)
+
+
+def render_scene(
+    scene: Scene, camera: Camera, window_width: int = 800, window_height: int = 600
+) -> Canvas:
     preview = RenderPreview(window_width, window_height)
     try:
         canvas = preview.render_with_preview(scene, camera, update_frequency=1)

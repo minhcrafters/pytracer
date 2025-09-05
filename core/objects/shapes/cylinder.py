@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 import numpy as np
 
 from core.color import Color
@@ -8,7 +8,9 @@ from core.opt.bounds import Bounds
 from core.rays.intersection import Intersection
 from core.rays.intersections import Intersections
 from core.objects.shapes.shape import Shape
-from core.rays.ray import Ray
+
+if TYPE_CHECKING:
+    from core.rays.ray import Ray
 
 
 class Cylinder(Shape):
@@ -96,13 +98,13 @@ class Cylinder(Shape):
 
         return Bounds(Point3(-1, -np.inf, -1), Point3(1, np.inf, 1))
 
-    def _check_cap(self, ray: Ray, t: np.float32) -> bool:
+    def _check_cap(self, ray: "Ray", t: np.float32) -> bool:
         x = ray.origin.x + ray.dir.x * t
         z = ray.origin.z + ray.dir.z * t
 
         return (x**2 + z**2) <= self.radius**2
 
-    def _intersect_caps(self, ray: Ray, inters: Intersections) -> None:
+    def _intersect_caps(self, ray: "Ray", inters: Intersections) -> None:
         if not self.closed or np.isclose(ray.dir.y, 0.0):
             return
 

@@ -14,8 +14,8 @@ if TYPE_CHECKING:
 
 @dataclass
 class Material:
-    color: Color | None = None
-    pattern: Pattern | None = None
+    color: Color = None
+    pattern: Pattern = None
     ambient: np.float32 = 0.1
     diffuse: np.float32 = 0.9
     specular: np.float32 = 0.9
