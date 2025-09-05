@@ -1,18 +1,3 @@
 TODO:
-- [x] cones
-- [ ] write more tests
-
-OPTIMIZATION TASK:
-- [x] Profile the current ray tracer to identify bottlenecks
-- [x] Implement NumPy optimizations for vector/matrix math
-- [x] Enhance bounding boxes for better scene optimization (implemented)
-- [x] Implement parallel rendering using multiprocessing
-- [ ] Optimize recursive ray tracing (depth limiting, early termination)
-- Optimize recursive ray tracing (depth limiting, early termination)
-- Add space partitioning (octrees or similar) for large scenes
-- Optimize OBJ file parsing and mesh loading
-- Implement precomputed vertex normals for faster rendering
-- Cache transformation matrix inverses
-- Test performance on sample scenes (teapot.obj, simple spheres)
-- Compare performance metrics before/after optimizations
-- Ensure implementation matches book reference for correctness
+- write more tests
+- make sure the gpu code has full feature parity

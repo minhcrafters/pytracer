@@ -1,0 +1,41 @@
+from typing import TYPE_CHECKING
+from core.cpu.color import Color
+from core.cpu.math.matrices import Matrix4
+from core.cpu.math.vectors import Point3
+from core.cpu.utils import world_to_object
+
+if TYPE_CHECKING:
+    from core.cpu.objects.shapes.shape import Shape
+
+
+class Pattern:
+    def __init__(self):
+        self.transform = Matrix4.identity()
+
+    def at(self, point: Point3) -> Color:
+        return NotImplemented
+
+    def at_object(self, obj: "Shape", world_point: Point3) -> Color:
+        obj_point = world_to_object(obj, world_point)
+        pattern_point = Point3.from_xyzw(self.transform.inverse()[:] @ obj_point.to_xyzw())
+
+        return self.at(pattern_point)
+
+    @staticmethod
+    def blend(a: "Pattern", b: "Pattern") -> "BlendPattern":
+        return BlendPattern(a, b)
+
+
+class BlendPattern(Pattern):
+    def __init__(self, a: Pattern, b: Pattern):
+        super().__init__()
+        self.a = a
+        self.b = b
+
+    def at(self, point: Point3) -> Color:
+        col_a: Color = self.a.at(point)
+        col_b: Color = self.b.at(point)
+        return (col_a + col_b) * 0.5
+
+    def __repr__(self):
+        return f"BlendPattern(a={self.a!r} b={self.b!r})"

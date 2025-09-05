@@ -1,10 +1,10 @@
 {
     "camera": {
-        "width": 100,
-        "height": 50,
+        "width": 1000,
+        "height": 500,
         "fov": 60,
         "view_transform": {
-            "from": [0, 1.5, -5],
+            "from": [0, 1.5, -10],
             "to": [0, 1, 0],
             "up": [0, 1, 0]
         }
@@ -42,8 +42,7 @@
                 "color": [1.0, 0.9, 0.9],
                 "ambient": 0.1,
                 "diffuse": 0.9,
-                "specular": 1.0,
-                "reflective": 1.0
+                "specular": 1.0
             },
             "transform": [{ "translate": [0, 1, 0.5] }, { "scale": [0.5, 0.5, 0.5] }]
         }

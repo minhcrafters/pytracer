@@ -1,0 +1,980 @@
+#version 450
+
+const float EPSILON = 0.00001;
+const int MAX_BOUNCES = 4;
+
+// Shape type codes
+const int SHAPE_PLANE = 0;
+const int SHAPE_SPHERE = 1;
+const int SHAPE_CUBE = 2;
+const int SHAPE_CYLINDER = 3;
+const int SHAPE_TRIANGLE = 4;
+const int SHAPE_GROUP = 5;
+
+// Pattern type codes
+const int PATTERN_NONE = 0;
+const int PATTERN_CHECKERED = 1;
+const int PATTERN_GRADIENT = 2;
+const int PATTERN_RING = 3;
+const int PATTERN_STRIPED = 4;
+const int PATTERN_BLEND = 5;
+
+// Buffer bindings
+layout(set = 0, binding = 0) readonly buffer ObjectsBuffer {
+    vec4 objects[];
+};
+
+layout(set = 0, binding = 1) readonly buffer CameraBuffer {
+    vec4 camera[];
+};
+
+layout(set = 0, binding = 2) buffer OutputBuffer {
+    vec4 output_pixels[];
+};
+
+layout(set = 0, binding = 3) readonly buffer GroupChildrenBuffer {
+    int group_children[];
+};
+
+// Workgroup size for parallel execution
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+// Utility functions
+vec3 vec3_from_xyzw(vec4 v) {
+    return v.xyz;
+}
+
+vec4 vec4_from_vec3(vec3 v, float w) {
+    return vec4(v, w);
+}
+
+// Vector operations
+float vec3_magnitude(vec3 v) {
+    return length(v);
+}
+
+vec3 vec3_normalize(vec3 v) {
+    return normalize(v);
+}
+
+float vec3_dot(vec3 a, vec3 b) {
+    return dot(a, b);
+}
+
+vec3 vec3_cross(vec3 a, vec3 b) {
+    return cross(a, b);
+}
+
+vec3 vec3_reflect(vec3 v, vec3 normal) {
+    return reflect(v, normal);
+}
+
+// Matrix operations
+mat4 mat4_inverse(mat4 m) {
+    return inverse(m);
+}
+
+vec4 mat4_mul_vec4(mat4 m, vec4 v) {
+    return m * v;
+}
+
+// Color operations
+vec3 color_mul(vec3 a, vec3 b) {
+    return a * b;
+}
+
+vec3 color_mul_scalar(vec3 c, float s) {
+    return c * s;
+}
+
+// Ray structure
+struct Ray {
+    vec3 origin;
+    vec3 direction;
+};
+
+// Intersection structure
+struct Intersection {
+    float t;
+    int object_index;
+};
+
+// Computation structure for shading
+struct Computation {
+    float t;
+    int object_index;
+    vec3 point;
+    vec3 eye;
+    vec3 normal;
+    vec3 reflect_vec;
+    bool inside;
+    vec3 over_point;
+    vec3 under_point;
+    bool cast_shadows;
+    float n1;
+    float n2;
+};
+
+// Material structure
+struct Material {
+    vec3 color;
+    float ambient;
+    float diffuse;
+    float specular;
+    float shininess;
+    float reflective;
+    float transparency;
+    float refractive_index;
+    int pattern_type;
+};
+
+// Shape data structure (packed from CPU)
+struct ShapeData {
+    int type_code;
+    bool closed;
+    float min_y;
+    float max_y;
+    vec3 color;
+    float ambient;
+    float diffuse;
+    float specular;
+    float shininess;
+    float reflective;
+    float transparency;
+    float refractive_index;
+    int pattern_type;
+    mat4 inverse_transform;
+    mat4 forward_transform;
+    vec3 p1;
+    vec3 p2;
+    vec3 p3;
+    int children_start;
+    int children_count;
+    vec3 pattern_a_color;
+    vec3 pattern_b_color;
+    mat4 pattern_inverse_transform;
+};
+
+// Camera data structure
+struct CameraData {
+    int width;
+    int height;
+    float fov;
+    int num_objects;
+    vec3 origin;
+    vec3 horizontal;
+    vec3 vertical;
+    vec3 lower_left_corner;
+    vec3 light_position;
+    vec3 light_intensity;
+};
+
+// Extract shape data from buffer
+ShapeData get_shape_data(int object_index) {
+    int base = object_index * 24; // OBJ_STRIDE = 24 vec4s per object
+
+    ShapeData shape;
+    shape.type_code = int(objects[base + 0].x);
+    shape.closed = objects[base + 0].y > 0.5;
+    shape.min_y = objects[base + 0].z;
+    shape.max_y = objects[base + 0].w;
+
+    shape.color = objects[base + 1].xyz;
+    shape.ambient = objects[base + 1].w;
+    shape.diffuse = objects[base + 2].x;
+    shape.specular = objects[base + 2].y;
+    shape.shininess = objects[base + 2].z;
+    shape.reflective = objects[base + 2].w;
+    shape.transparency = objects[base + 3].x;
+    shape.refractive_index = objects[base + 3].y;
+    shape.pattern_type = int(objects[base + 3].z);
+
+    // Build inverse transform matrix from columns (column-major storage)
+    mat4 inv_transform = mat4(0.0);
+    for (int c = 0; c < 4; c++) {
+        inv_transform[c][0] = objects[base + 4 + c].x;
+        inv_transform[c][1] = objects[base + 4 + c].y;
+        inv_transform[c][2] = objects[base + 4 + c].z;
+        inv_transform[c][3] = objects[base + 4 + c].w;
+    }
+    shape.inverse_transform = inv_transform;
+
+    // Build forward transform matrix from columns (column-major storage)
+    mat4 fwd_transform = mat4(0.0);
+    for (int c = 0; c < 4; c++) {
+        fwd_transform[c][0] = objects[base + 8 + c].x;
+        fwd_transform[c][1] = objects[base + 8 + c].y;
+        fwd_transform[c][2] = objects[base + 8 + c].z;
+        fwd_transform[c][3] = objects[base + 8 + c].w;
+    }
+    shape.forward_transform = fwd_transform;
+
+    shape.p1 = objects[base + 12].xyz;
+    shape.p2 = objects[base + 13].xyz;
+    shape.p3 = objects[base + 14].xyz;
+    shape.children_start = int(objects[base + 15].x);
+    shape.children_count = int(objects[base + 15].y);
+
+    shape.pattern_a_color = objects[base + 16].xyz;
+    shape.pattern_b_color = objects[base + 17].xyz;
+
+    // Build pattern inverse transform matrix from columns (column-major storage)
+    mat4 pat_inv_transform = mat4(0.0);
+    for (int c = 0; c < 4; c++) {
+        pat_inv_transform[c][0] = objects[base + 18 + c].x;
+        pat_inv_transform[c][1] = objects[base + 18 + c].y;
+        pat_inv_transform[c][2] = objects[base + 18 + c].z;
+        pat_inv_transform[c][3] = objects[base + 18 + c].w;
+    }
+    shape.pattern_inverse_transform = pat_inv_transform;
+
+    return shape;
+}
+
+// Extract camera data from buffer
+CameraData get_camera_data() {
+    CameraData cam;
+    cam.width = int(camera[0].x);
+    cam.height = int(camera[0].y);
+    cam.fov = camera[0].z;
+    cam.num_objects = int(camera[0].w);
+
+    cam.origin = camera[1].xyz;
+    cam.horizontal = camera[2].xyz;
+    cam.vertical = camera[3].xyz;
+    cam.lower_left_corner = camera[4].xyz;
+    cam.light_position = camera[5].xyz;
+    cam.light_intensity = camera[6].xyz;
+
+    return cam;
+}
+
+// Transform ray by matrix
+Ray ray_transform(Ray ray, mat4 transform) {
+    vec4 origin_xyzw = vec4_from_vec3(ray.origin, 1.0);
+    vec4 dir_xyzw = vec4_from_vec3(ray.direction, 0.0);
+
+    vec4 new_origin = mat4_mul_vec4(transform, origin_xyzw);
+    vec4 new_dir = mat4_mul_vec4(transform, dir_xyzw);
+
+    return Ray(vec3_from_xyzw(new_origin), vec3_from_xyzw(new_dir));
+}
+
+// Generate ray from camera for pixel coordinates (matching CPU implementation)
+Ray camera_ray_from_pixel(CameraData cam, int px, int py) {
+    float u = (float(px) + 0.5) / float(cam.width);
+    float v = (float(py) + 0.5) / float(cam.height);
+
+    // Flip v so that (0,0) is top-left
+    v = 1.0 - v;
+
+    vec3 pixel_point = cam.lower_left_corner + u * cam.horizontal + v * cam.vertical;
+    vec3 dir = vec3_normalize(pixel_point - cam.origin);
+
+    return Ray(cam.origin, dir);
+}
+
+// Sphere intersection
+void sphere_intersect(Ray ray, int object_index, inout Intersection intersections[32], inout int count) {
+    ShapeData shape = get_shape_data(object_index);
+
+    // Transform ray to object space
+    Ray local_ray = ray_transform(ray, shape.inverse_transform);
+
+    vec3 sphere_to_ray = local_ray.origin;
+    float a = vec3_dot(local_ray.direction, local_ray.direction);
+    float b = 2.0 * vec3_dot(local_ray.direction, sphere_to_ray);
+    float c = vec3_dot(sphere_to_ray, sphere_to_ray) - 1.0;
+    float discriminant = b * b - 4.0 * a * c;
+
+    if (discriminant >= 0.0) {
+        float sqrt_d = sqrt(discriminant);
+        float t1 = (-b - sqrt_d) / (2.0 * a);
+        float t2 = (-b + sqrt_d) / (2.0 * a);
+
+        if (t1 > EPSILON) {
+            intersections[count] = Intersection(t1, object_index);
+            count++;
+        }
+        if (t2 > EPSILON) {
+            intersections[count] = Intersection(t2, object_index);
+            count++;
+        }
+    }
+}
+
+// Plane intersection
+void plane_intersect(Ray ray, int object_index, inout Intersection intersections[32], inout int count) {
+    ShapeData shape = get_shape_data(object_index);
+
+    // Transform ray to object space
+    Ray local_ray = ray_transform(ray, shape.inverse_transform);
+
+    if (abs(local_ray.direction.y) < EPSILON) {
+        return; // Ray is parallel to plane
+    }
+
+    float t = -local_ray.origin.y / local_ray.direction.y;
+
+    if (t > EPSILON) {
+        intersections[count] = Intersection(t, object_index);
+        count++;
+    }
+}
+
+// Cube intersection
+void cube_intersect(Ray ray, int object_index, inout Intersection intersections[32], inout int count) {
+    ShapeData shape = get_shape_data(object_index);
+
+    // Transform ray to object space
+    Ray local_ray = ray_transform(ray, shape.inverse_transform);
+
+    vec3 tmin = (-vec3(1.0) - local_ray.origin) / local_ray.direction;
+    vec3 tmax = (vec3(1.0) - local_ray.origin) / local_ray.direction;
+
+    vec3 t1 = min(tmin, tmax);
+    vec3 t2 = max(tmin, tmax);
+
+    float t_near = max(max(t1.x, t1.y), t1.z);
+    float t_far = min(min(t2.x, t2.y), t2.z);
+
+    if (t_near < t_far && t_far > EPSILON) {
+        if (t_near > EPSILON) {
+            intersections[count] = Intersection(t_near, object_index);
+            count++;
+        }
+        intersections[count] = Intersection(t_far, object_index);
+        count++;
+    }
+}
+
+// Cylinder intersection
+void cylinder_intersect(Ray ray, int object_index, inout Intersection intersections[32], inout int count) {
+    ShapeData shape = get_shape_data(object_index);
+
+    // Transform ray to object space
+    Ray local_ray = ray_transform(ray, shape.inverse_transform);
+
+    float a = local_ray.direction.x * local_ray.direction.x + local_ray.direction.z * local_ray.direction.z;
+
+    if (abs(a) < EPSILON) {
+        return; // Ray is parallel to cylinder axis
+    }
+
+    float b = 2.0 * (local_ray.origin.x * local_ray.direction.x + local_ray.origin.z * local_ray.direction.z);
+    float c = local_ray.origin.x * local_ray.origin.x + local_ray.origin.z * local_ray.origin.z - 1.0;
+    float discriminant = b * b - 4.0 * a * c;
+
+    if (discriminant >= 0.0) {
+        float sqrt_d = sqrt(discriminant);
+        float t1 = (-b - sqrt_d) / (2.0 * a);
+        float t2 = (-b + sqrt_d) / (2.0 * a);
+
+        // Check y bounds
+        float y1 = local_ray.origin.y + t1 * local_ray.direction.y;
+        float y2 = local_ray.origin.y + t2 * local_ray.direction.y;
+
+        if (shape.min_y <= y1 && y1 <= shape.max_y && t1 > EPSILON) {
+            intersections[count] = Intersection(t1, object_index);
+            count++;
+        }
+        if (shape.min_y <= y2 && y2 <= shape.max_y && t2 > EPSILON) {
+            intersections[count] = Intersection(t2, object_index);
+            count++;
+        }
+
+        // Check caps if closed
+        if (shape.closed) {
+            // Bottom cap
+            float t_bottom = (shape.min_y - local_ray.origin.y) / local_ray.direction.y;
+            if (t_bottom > EPSILON) {
+                float x = local_ray.origin.x + t_bottom * local_ray.direction.x;
+                float z = local_ray.origin.z + t_bottom * local_ray.direction.z;
+                if (x * x + z * z <= 1.0) {
+                    intersections[count] = Intersection(t_bottom, object_index);
+                    count++;
+                }
+            }
+
+            // Top cap
+            float t_top = (shape.max_y - local_ray.origin.y) / local_ray.direction.y;
+            if (t_top > EPSILON) {
+                float x = local_ray.origin.x + t_top * local_ray.direction.x;
+                float z = local_ray.origin.z + t_top * local_ray.direction.z;
+                if (x * x + z * z <= 1.0) {
+                    intersections[count] = Intersection(t_top, object_index);
+                    count++;
+                }
+            }
+        }
+    }
+}
+
+// Triangle intersection
+void triangle_intersect(Ray ray, int object_index, inout Intersection intersections[32], inout int count) {
+    ShapeData shape = get_shape_data(object_index);
+
+    // Transform ray to object space
+    Ray local_ray = ray_transform(ray, shape.inverse_transform);
+
+    vec3 e1 = shape.p2 - shape.p1;
+    vec3 e2 = shape.p3 - shape.p1;
+    vec3 dir_cross_e2 = cross(local_ray.direction, e2);
+    float det = dot(e1, dir_cross_e2);
+
+    if (abs(det) < EPSILON) {
+        return;
+    }
+
+    float f = 1.0 / det;
+    vec3 p1_to_origin = local_ray.origin - shape.p1;
+    float u = f * dot(p1_to_origin, dir_cross_e2);
+
+    if (u < 0.0 || u > 1.0) {
+        return;
+    }
+
+    vec3 origin_cross_e1 = cross(p1_to_origin, e1);
+    float v = f * dot(local_ray.direction, origin_cross_e1);
+
+    if (v < 0.0 || u + v > 1.0) {
+        return;
+    }
+
+    float t = f * dot(e2, origin_cross_e1);
+
+    if (t > EPSILON) {
+        intersections[count] = Intersection(t, object_index);
+        count++;
+    }
+}
+
+// Intersect scene with ray
+int scene_intersect(Ray ray, CameraData cam, out Intersection all_inters[32]) {
+    Intersection intersections[32];
+    int count = 0;
+
+    // gather intersections as before
+    for (int i = 0; i < cam.num_objects; i++) {
+        ShapeData shape = get_shape_data(i);
+        if (shape.type_code == SHAPE_SPHERE) {
+            sphere_intersect(ray, i, intersections, count);
+        } else if (shape.type_code == SHAPE_PLANE) {
+            plane_intersect(ray, i, intersections, count);
+        } else if (shape.type_code == SHAPE_CUBE) {
+            cube_intersect(ray, i, intersections, count);
+        } else if (shape.type_code == SHAPE_CYLINDER) {
+            cylinder_intersect(ray, i, intersections, count);
+        } else if (shape.type_code == SHAPE_TRIANGLE) {
+            triangle_intersect(ray, i, intersections, count);
+        } else if (shape.type_code == SHAPE_GROUP) {
+            for (int j = 0; j < shape.children_count; j++) {
+                int child_index = group_children[shape.children_start + j];
+                ShapeData child_shape = get_shape_data(child_index);
+                if (child_shape.type_code == SHAPE_SPHERE) {
+                    sphere_intersect(ray, child_index, intersections, count);
+                } else if (child_shape.type_code == SHAPE_PLANE) {
+                    plane_intersect(ray, child_index, intersections, count);
+                } else if (child_shape.type_code == SHAPE_CUBE) {
+                    cube_intersect(ray, child_index, intersections, count);
+                } else if (child_shape.type_code == SHAPE_CYLINDER) {
+                    cylinder_intersect(ray, child_index, intersections, count);
+                } else if (child_shape.type_code == SHAPE_TRIANGLE) {
+                    triangle_intersect(ray, child_index, intersections, count);
+                }
+            }
+        }
+    }
+
+    // filter positives
+    int filtered_count = 0;
+    for (int i = 0; i < count; i++) {
+        if (intersections[i].t > EPSILON) {
+            all_inters[filtered_count] = intersections[i];
+            filtered_count++;
+        }
+    }
+
+    // sort by t
+    for (int i = 0; i < filtered_count - 1; i++) {
+        for (int j = i + 1; j < filtered_count; j++) {
+            if (all_inters[j].t < all_inters[i].t) {
+                Intersection tmp = all_inters[i];
+                all_inters[i] = all_inters[j];
+                all_inters[j] = tmp;
+            }
+        }
+    }
+
+    return filtered_count;
+}
+
+// Normal calculations
+vec3 sphere_normal_at(vec3 local_point) {
+    return local_point;
+}
+
+vec3 plane_normal_at(vec3 local_point) {
+    return vec3(0.0, 1.0, 0.0);
+}
+
+vec3 cube_normal_at(vec3 local_point) {
+    vec3 abs_point = abs(local_point);
+    float max_component = max(max(abs_point.x, abs_point.y), abs_point.z);
+
+    if (max_component == abs_point.x) {
+        return vec3(local_point.x, 0.0, 0.0);
+    } else if (max_component == abs_point.y) {
+        return vec3(0.0, local_point.y, 0.0);
+    } else {
+        return vec3(0.0, 0.0, local_point.z);
+    }
+}
+
+vec3 cylinder_normal_at(ShapeData shape, vec3 local_point) {
+    float dist = local_point.x * local_point.x + local_point.z * local_point.z;
+
+    if (dist < 1.0 && local_point.y >= shape.max_y - EPSILON) {
+        return vec3(0.0, 1.0, 0.0); // Top cap
+    } else if (dist < 1.0 && local_point.y <= shape.min_y + EPSILON) {
+        return vec3(0.0, -1.0, 0.0); // Bottom cap
+    } else {
+        return vec3(local_point.x, 0.0, local_point.z); // Side
+    }
+}
+
+// World to object space transformation
+vec3 world_to_object(int object_index, vec3 world_point) {
+    ShapeData shape = get_shape_data(object_index);
+    vec4 point_xyzw = vec4_from_vec3(world_point, 1.0);
+    vec4 local_xyzw = mat4_mul_vec4(shape.inverse_transform, point_xyzw);
+    return vec3_from_xyzw(local_xyzw);
+}
+
+// Normal to world space transformation
+vec3 normal_to_world(int object_index, vec3 local_normal) {
+    ShapeData shape = get_shape_data(object_index);
+    mat4 transpose_inverse = transpose(shape.inverse_transform);
+    vec4 normal_xyzw = vec4_from_vec3(local_normal, 0.0);
+    vec4 world_normal_xyzw = mat4_mul_vec4(transpose_inverse, normal_xyzw);
+    vec3 world_normal = vec3_normalize(vec3_from_xyzw(world_normal_xyzw));
+    return world_normal;
+}
+
+// Get normal at world point
+vec3 normal_at(int object_index, vec3 world_point) {
+    vec3 local_point = world_to_object(object_index, world_point);
+    ShapeData shape = get_shape_data(object_index);
+
+    vec3 local_normal;
+    if (shape.type_code == SHAPE_SPHERE) {
+        local_normal = sphere_normal_at(local_point);
+    } else if (shape.type_code == SHAPE_PLANE) {
+        local_normal = plane_normal_at(local_point);
+    } else if (shape.type_code == SHAPE_CUBE) {
+        local_normal = cube_normal_at(local_point);
+    } else if (shape.type_code == SHAPE_CYLINDER) {
+        local_normal = cylinder_normal_at(shape, local_point);
+    } else if (shape.type_code == SHAPE_TRIANGLE) {
+        vec3 e1 = shape.p2 - shape.p1;
+        vec3 e2 = shape.p3 - shape.p1;
+        local_normal = normalize(cross(e2, e1));
+    } else if (shape.type_code == SHAPE_GROUP) {
+        // Compute normal by averaging normals of children
+        vec3 world_normal = vec3(0.0);
+        int count = 0;
+        for (int j = 0; j < shape.children_count; j++) {
+            int child_index = group_children[shape.children_start + j];
+            ShapeData child_shape = get_shape_data(child_index);
+
+            if (child_shape.type_code == SHAPE_GROUP) continue; // no recursion into other groups
+
+            vec3 child_local_point = world_to_object(child_index, world_point);
+            vec3 child_local_normal;
+            if (child_shape.type_code == SHAPE_SPHERE) {
+                child_local_normal = sphere_normal_at(child_local_point);
+            } else if (child_shape.type_code == SHAPE_PLANE) {
+                child_local_normal = plane_normal_at(child_local_point);
+            } else if (child_shape.type_code == SHAPE_CUBE) {
+                child_local_normal = cube_normal_at(child_local_point);
+            } else if (child_shape.type_code == SHAPE_CYLINDER) {
+                child_local_normal = cylinder_normal_at(child_shape, child_local_point);
+            } else if (child_shape.type_code == SHAPE_TRIANGLE) {
+                vec3 e1 = child_shape.p2 - child_shape.p1;
+                vec3 e2 = child_shape.p3 - child_shape.p1;
+                child_local_normal = normalize(cross(e2, e1));
+            } else {
+                continue;
+            }
+            vec3 child_world_normal = normal_to_world(child_index, child_local_normal);
+            world_normal += child_world_normal;
+            count++;
+        }
+        if (count > 0) {
+            return normalize(world_normal / float(count));
+        } else {
+            return vec3(0.0, 1.0, 0.0);
+        }
+    } else {
+        local_normal = vec3(0.0, 1.0, 0.0); // Default
+    }
+
+    return normal_to_world(object_index, local_normal);
+}
+
+// Prepare computation for intersection
+Computation prepare_computation(Intersection hit,
+    Ray ray,
+    CameraData cam,
+    Intersection all_inters[32],
+    int inter_count,
+    int hit_index) {
+    Computation comps;
+    comps.t = hit.t;
+    comps.object_index = hit.object_index;
+
+    comps.point = ray.origin + ray.direction * comps.t;
+    comps.eye = -ray.direction;
+
+    ShapeData shape = get_shape_data(comps.object_index);
+    comps.cast_shadows = true;
+
+    comps.normal = normal_at(comps.object_index, comps.point);
+    if (vec3_dot(comps.eye, comps.normal) < 0.0) {
+        comps.inside = true;
+        comps.normal = -comps.normal;
+    } else {
+        comps.inside = false;
+    }
+
+    comps.reflect_vec = vec3_reflect(ray.direction, comps.normal);
+    comps.over_point = comps.point + comps.normal * EPSILON;
+    comps.under_point = comps.point - comps.normal * EPSILON;
+
+    // --- n1 / n2 calculation (Python "containers" logic) ---
+    comps.n1 = 1.0;
+    comps.n2 = 1.0;
+
+    // Track active objects as we march the intersection list
+    int container_stack[32];
+    int container_count = 0;
+
+    for (int i = 0; i < inter_count; ++i) {
+        int obj = all_inters[i].object_index;
+
+        // When we hit the current intersection
+        if (i == hit_index) {
+            // n1 is either air or the last object in stack
+            if (container_count == 0) {
+                comps.n1 = 1.0;
+            } else {
+                ShapeData lastShape = get_shape_data(container_stack[container_count - 1]);
+                comps.n1 = lastShape.refractive_index;
+            }
+        }
+
+        // Toggle object in the container stack
+        bool found = false;
+        for (int j = 0; j < container_count; ++j) {
+            if (container_stack[j] == obj) {
+                // remove
+                for (int k = j; k < container_count - 1; ++k) {
+                    container_stack[k] = container_stack[k + 1];
+                }
+                container_count--;
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            container_stack[container_count++] = obj;
+        }
+
+        // After toggling, if this was the hit, set n2
+        if (i == hit_index) {
+            if (container_count == 0) {
+                comps.n2 = 1.0;
+            } else {
+                ShapeData lastShape = get_shape_data(container_stack[container_count - 1]);
+                comps.n2 = lastShape.refractive_index;
+            }
+            break; // done, no need to march further
+        }
+    }
+
+    return comps;
+}
+
+// Check if point is shadowed
+bool is_shadowed(vec3 over_point, CameraData cam) {
+    vec3 v = cam.light_position - over_point;
+    float distance = vec3_magnitude(v);
+    vec3 direction = vec3_normalize(v);
+
+    Ray shadow_ray = Ray(over_point, direction);
+
+    Intersection all_inters[32];
+    int inter_count = scene_intersect(shadow_ray, cam, all_inters);
+
+    // no hit?
+    if (inter_count == 0) {
+        return false;
+    }
+
+    // first hit is index 0
+    Intersection hit = all_inters[0];
+
+    return (hit.t > 0.0 && hit.t < distance);
+}
+
+// Pattern functions
+vec3 pattern_at_object(int object_index, vec3 world_point) {
+    ShapeData shape = get_shape_data(object_index);
+
+    if (shape.pattern_type == PATTERN_NONE) {
+        return shape.color;
+    }
+
+    // Transform to object space, then to pattern space
+    vec3 obj_point = world_to_object(object_index, world_point);
+    vec4 pattern_point_xyzw = mat4_mul_vec4(shape.pattern_inverse_transform, vec4_from_vec3(obj_point, 1.0));
+    vec3 pattern_point = vec3_from_xyzw(pattern_point_xyzw);
+
+    if (shape.pattern_type == PATTERN_CHECKERED) {
+        // Checkered pattern: alternates based on floor sum of coordinates
+        float sum = floor(pattern_point.x) + floor(pattern_point.y) + floor(pattern_point.z);
+        bool is_even = mod(sum, 2.0) == 0.0;
+        return is_even ? shape.pattern_a_color : shape.pattern_b_color;
+    } else if (shape.pattern_type == PATTERN_GRADIENT) {
+        // Gradient pattern: linear interpolation along x-axis
+        float frac = pattern_point.x - floor(pattern_point.x);
+        return mix(shape.pattern_a_color, shape.pattern_b_color, frac);
+    } else if (shape.pattern_type == PATTERN_RING) {
+        // Ring pattern: concentric circles in xz-plane
+        float dist = sqrt(pattern_point.x * pattern_point.x + pattern_point.z * pattern_point.z);
+        bool is_even = mod(floor(dist), 2.0) == 0.0;
+        return is_even ? shape.pattern_a_color : shape.pattern_b_color;
+    } else if (shape.pattern_type == PATTERN_STRIPED) {
+        // Striped pattern: alternates along x-axis
+        bool is_even = mod(floor(pattern_point.x), 2.0) == 0.0;
+        return is_even ? shape.pattern_a_color : shape.pattern_b_color;
+    } else if (shape.pattern_type == PATTERN_BLEND) {
+        // Blend pattern: average of two colors (simplified implementation)
+        return (shape.pattern_a_color + shape.pattern_b_color) * 0.5;
+    } else {
+        // Invalid pattern type, fallback to shape color
+        return shape.color;
+    }
+}
+
+// Phong lighting
+vec3 lighting(Computation comps, CameraData cam, bool in_shadow) {
+    ShapeData shape = get_shape_data(comps.object_index);
+
+    vec3 effective_color = pattern_at_object(comps.object_index, comps.over_point);
+    effective_color = color_mul(effective_color, cam.light_intensity);
+
+    vec3 ambient = color_mul_scalar(effective_color, shape.ambient);
+
+    if (in_shadow) {
+        return ambient;
+    }
+
+    vec3 light_vec = vec3_normalize(cam.light_position - comps.over_point);
+    float light_dot_normal = vec3_dot(light_vec, comps.normal);
+
+    vec3 diffuse = vec3(0.0);
+    vec3 specular = vec3(0.0);
+
+    if (light_dot_normal >= 0.0) {
+        diffuse = color_mul_scalar(effective_color, shape.diffuse * light_dot_normal);
+
+        vec3 reflect_vec = vec3_reflect(-light_vec, comps.normal);
+        float reflect_dot_eye = vec3_dot(reflect_vec, comps.eye);
+
+        if (reflect_dot_eye > 0.0) {
+            float factor = pow(reflect_dot_eye, shape.shininess);
+            specular = color_mul_scalar(cam.light_intensity, shape.specular * factor);
+        }
+    }
+
+    return ambient + diffuse + specular;
+}
+
+// Fresnel approximation
+float fresnel(Computation comps) {
+    float cos_t = vec3_dot(comps.eye, comps.normal);
+
+    if (comps.n1 > comps.n2) {
+        float n = comps.n1 / comps.n2;
+        float sin2_t = n * n * (1.0 - cos_t * cos_t);
+
+        if (sin2_t > 1.0) {
+            return 1.0;
+        }
+
+        cos_t = sqrt(1.0 - sin2_t);
+    }
+
+    float r0 = pow((comps.n1 - comps.n2) / (comps.n1 + comps.n2), 2.0);
+    return r0 + (1.0 - r0) * pow(1.0 - cos_t, 5.0);
+}
+
+// Iterative color calculation (no recursion for GLSL compatibility)
+vec3 color_at(Ray initial_ray, CameraData cam, int max_bounces) {
+    const int MAX_TASKS = 64; // safety limit for stack depth / branches
+    // stack arrays
+    Ray ray_stack[MAX_TASKS];
+    vec3 weight_stack[MAX_TASKS];
+    int rem_bounces_stack[MAX_TASKS];
+    int stack_ptr = 0;
+
+    // push initial task
+    ray_stack[stack_ptr] = initial_ray;
+    weight_stack[stack_ptr] = vec3(1.0);
+    rem_bounces_stack[stack_ptr] = max_bounces;
+    stack_ptr++;
+
+    vec3 final_color = vec3(0.0);
+
+    // while there are tasks on the stack, pop and process
+    while (stack_ptr > 0) {
+        // pop
+        stack_ptr--;
+        Ray cur_ray = ray_stack[stack_ptr];
+        vec3 cur_weight = weight_stack[stack_ptr];
+        int rem = rem_bounces_stack[stack_ptr];
+
+        // trivial cutoff: if contribution negligible or no bounces remain for reflection/refraction, we still compute surface
+        // small-weight cutoff to avoid tiny contributions (tuneable)
+        if ((cur_weight.x + cur_weight.y + cur_weight.z) < 1e-4) {
+            continue;
+        }
+
+        // intersect scene
+        Intersection all_inters[32];
+        int inter_count = scene_intersect(cur_ray, cam, all_inters);
+
+        // no hit?
+        if (inter_count == 0) {
+            continue;
+        }
+
+        // first hit is index 0
+        Intersection hit = all_inters[0];
+
+        Computation comps = prepare_computation(hit, cur_ray, cam, all_inters, inter_count, 0);
+        ShapeData shape = get_shape_data(comps.object_index);
+        bool in_shadow = comps.cast_shadows && is_shadowed(comps.over_point, cam);
+        vec3 surface = lighting(comps, cam, in_shadow);
+
+        // add surface contribution immediately (matches Python: surface is added at this level)
+        final_color += cur_weight * surface;
+
+        // if no remaining bounces, we don't spawn reflection/refraction rays
+        if (rem <= 0) {
+            continue;
+        }
+
+        bool has_reflect = shape.reflective > 0.0;
+        bool has_refract = shape.transparency > 0.0;
+
+        // Both reflection and refraction: use Fresnel to split contributions
+        if (has_reflect && has_refract) {
+            float reflectance = fresnel(comps);
+
+            // compute refraction direction and check total internal reflection
+            float n_ratio = comps.n1 / comps.n2;
+            float cos_i = vec3_dot(comps.eye, comps.normal);
+            float sin2_t = n_ratio * n_ratio * (1.0 - cos_i * cos_i);
+
+            if (sin2_t <= 1.0) {
+                // valid refraction
+                float cos_t = sqrt(1.0 - sin2_t);
+                vec3 refr_dir = comps.normal * (n_ratio * cos_i - cos_t) - comps.eye * n_ratio;
+
+                // push reflected ray (offset from surface to prevent self-intersection)
+                vec3 reflect_origin = comps.over_point + comps.normal * EPSILON;
+                if (stack_ptr + 1 < MAX_TASKS) {
+                    ray_stack[stack_ptr] = Ray(reflect_origin, comps.reflect_vec);
+                    weight_stack[stack_ptr] = cur_weight * shape.reflective * reflectance;
+                    rem_bounces_stack[stack_ptr] = rem - 1;
+                    stack_ptr++;
+                }
+
+                // push refracted ray (under_point) with weight scaled by material.transparency * (1 - reflectance)
+                if (stack_ptr + 1 < MAX_TASKS) {
+                    ray_stack[stack_ptr] = Ray(comps.under_point, vec3_normalize(refr_dir));
+                    weight_stack[stack_ptr] = cur_weight * shape.transparency * (1.0 - reflectance);
+                    rem_bounces_stack[stack_ptr] = rem - 1;
+                    stack_ptr++;
+                }
+            } else {
+                // total internal reflection -> treat as pure reflection (reflectance = 1.0)
+                vec3 reflect_origin = comps.over_point + comps.normal * EPSILON;
+                if (stack_ptr + 1 < MAX_TASKS) {
+                    ray_stack[stack_ptr] = Ray(reflect_origin, comps.reflect_vec);
+                    weight_stack[stack_ptr] = cur_weight * shape.reflective * 1.0;
+                    rem_bounces_stack[stack_ptr] = rem - 1;
+                    stack_ptr++;
+                }
+            }
+        } else if (has_reflect) {
+            // pure reflection
+            vec3 reflect_origin = comps.over_point + comps.normal * EPSILON;
+            if (stack_ptr + 1 < MAX_TASKS) {
+                ray_stack[stack_ptr] = Ray(reflect_origin, comps.reflect_vec);
+                weight_stack[stack_ptr] = cur_weight * shape.reflective;
+                rem_bounces_stack[stack_ptr] = rem - 1;
+                stack_ptr++;
+            }
+        } else if (has_refract) {
+            // pure refraction
+            float n_ratio = comps.n1 / comps.n2;
+            float cos_i = vec3_dot(comps.eye, comps.normal);
+            float sin2_t = n_ratio * n_ratio * (1.0 - cos_i * cos_i);
+
+            if (sin2_t <= 1.0) {
+                float cos_t = sqrt(1.0 - sin2_t);
+                vec3 refr_dir = comps.normal * (n_ratio * cos_i - cos_t) - comps.eye * n_ratio;
+
+                if (stack_ptr + 1 < MAX_TASKS) {
+                    ray_stack[stack_ptr] = Ray(comps.under_point, vec3_normalize(refr_dir));
+                    weight_stack[stack_ptr] = cur_weight * shape.transparency;
+                    rem_bounces_stack[stack_ptr] = rem - 1;
+                    stack_ptr++;
+                }
+            } else {
+                // total internal reflection would have been handled above in combined case; for pure-refract but TIR occurs -> no secondary ray
+            }
+        }
+
+        // continue loop until stack empty
+    } // end while
+
+    return final_color;
+}
+
+// Main compute shader entry point
+void main() {
+    ivec2 pixel_coords = ivec2(gl_GlobalInvocationID.xy);
+    CameraData cam = get_camera_data();
+
+    // Check bounds
+    if (pixel_coords.x >= cam.width || pixel_coords.y >= cam.height) {
+        return;
+    }
+
+    // Generate ray for this pixel
+    Ray ray = camera_ray_from_pixel(cam, pixel_coords.x, pixel_coords.y);
+
+    // Trace ray and compute color
+    vec3 color = color_at(ray, cam, MAX_BOUNCES);
+
+    // Clamp color to [0, 1]
+    color = clamp(color, vec3(0.0), vec3(1.0));
+
+    // Write to output buffer
+    int pixel_index = pixel_coords.y * cam.width + pixel_coords.x;
+    output_pixels[pixel_index] = vec4(color, 1.0);
+}

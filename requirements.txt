@@ -2,3 +2,4 @@ numpy
 pygame
 wgpu
 glfw
+pywavefront

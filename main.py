@@ -1,12 +1,19 @@
 import argparse
 
-from core.scene_config import load_scene
-from render_preview import render_scene
+from core.cpu.scene_config import load_scene
+from core.cpu.render_preview import render_scene
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--scene", required=True)
+    parser.add_argument("scene")
+    parser.add_argument("--gpu", action="store_true", default=True)
     args = parser.parse_args()
+
+    if args.gpu:
+        from core.gpu.render_wgpu import main
+
+        main(args.scene)
+        exit()
 
     scene_data = load_scene(args.scene)
     print(f"Scene {args.scene} loaded successfully!")
